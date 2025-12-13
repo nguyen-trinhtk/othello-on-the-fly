@@ -1,7 +1,7 @@
 CXX := clang++
 CXXFLAGS := -Wall
 
-SRC = main.cpp
+SRC = main.cpp board.cpp
 TARGET = play
 
 $(TARGET) : $(SRC)
