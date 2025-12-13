@@ -1,11 +1,23 @@
 #include "board.hpp"
 
 Board::Board() : boardSize(8) { 
+    clearBoard();
     std::cout << "8x8 Othello board successfully created!" << std::endl;
 }
 
 Board::Board(int boardSize) : boardSize(boardSize) {
+    clearBoard();
     std::cout << boardSize << "x" << boardSize << " Othello board successfully created!" << std::endl;
+}
+
+void Board::clearBoard() {
+    for (int i = 0; i < boardSize; i++) {
+        std::vector<char> row;
+        for (int j = 0; j < boardSize; j++) {
+            row.push_back(' ');
+        }
+        boardMatrix.push_back(row);
+    }
 }
 
 void Board::horizontalDivider() {
@@ -23,12 +35,13 @@ void Board::firstNumberingRow() {
     std::cout << "|" << std::endl;
 }
 
-void Board::numberedGridRows() {
+void Board::renderRows() {
     for (int i = 1; i <= boardSize; i++) {
         Board::horizontalDivider();
         std::cout << "| " << i << " ";
-        for (int i = 1; i <= boardSize; i++) {
-            std::cout << "|   ";
+        for (int j = 1; j <= boardSize; j++) {
+            std::cout << "| " << boardMatrix[i - 1][j - 1] << " ";
+            // std::cout << "|   ";
         }
         std::cout << "|" << std::endl;
     }
@@ -37,7 +50,7 @@ void Board::numberedGridRows() {
 void Board::printBoard() {
     Board::horizontalDivider();
     Board::firstNumberingRow();
-    Board::numberedGridRows();
+    Board::renderRows();
     Board::horizontalDivider();
 }
 

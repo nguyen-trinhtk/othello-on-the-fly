@@ -13,5 +13,5 @@
 - do a game loop
 - how to unicode char in c++
 
-\U+2B24
-\U+2B55
+"⚫"
+"⚪"
