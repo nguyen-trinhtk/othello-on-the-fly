@@ -8,10 +8,17 @@
 > will only save memory at first, also harder to do operations?
 
 - do a command parser
-- initialize board
 
+
+
+DONE:
+- initialize board
+- placeable board
 - do a game loop
 - how to unicode char in c++
 
 "⚫"
 "⚪"
+
+"●"
+"○"

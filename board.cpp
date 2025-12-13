@@ -1,49 +1,67 @@
 #include "board.hpp"
 
 Board::Board() : boardSize(8) { 
+    whitesTurn = true;
     clearBoard();
-    std::cout << "8x8 Othello board successfully created!" << std::endl;
+    initialSetup();
+    cout << "8x8 Othello board successfully created!" << endl;
 }
 
 Board::Board(int boardSize) : boardSize(boardSize) {
+    whitesTurn = true;
     clearBoard();
-    std::cout << boardSize << "x" << boardSize << " Othello board successfully created!" << std::endl;
+    initialSetup();
+    cout << boardSize << "x" << boardSize << " Othello board successfully created!" << endl;
 }
 
 void Board::clearBoard() {
     for (int i = 0; i < boardSize; i++) {
-        std::vector<char> row;
+        vector<string> row;
         for (int j = 0; j < boardSize; j++) {
-            row.push_back(' ');
+            row.push_back(NOTHING);
         }
         boardMatrix.push_back(row);
     }
 }
 
+void Board::initialSetup() {
+    int centers[] = {boardSize/2 - 1, boardSize/2};
+    for (int i : centers) {
+        for (int j : centers) {
+            if (i == j) {
+                boardMatrix[i][j] = BLACK;
+            }
+            else {
+                boardMatrix[i][j] = WHITE;
+            }
+        }
+    }
+}
+
 void Board::horizontalDivider() {
     for (int i = 0; i < ((boardSize + 1)*4 + 1); i++) {
-        std::cout << "-";
+        cout << "-";
     }
-    std::cout << std::endl;
+    cout << endl;
 }
 
 void Board::firstNumberingRow() {
-    std::cout << "|   ";
+    cout << "|   ";
     for (int i = 1; i <= boardSize; i++) {
-        std::cout << "| " << char(i + 64) << " ";
+        cout << "| " << char(i + 64) << " ";
     }
-    std::cout << "|" << std::endl;
+    cout << "|" << endl;
 }
 
 void Board::renderRows() {
     for (int i = 1; i <= boardSize; i++) {
         Board::horizontalDivider();
-        std::cout << "| " << i << " ";
+        cout << "| " << i << " ";
         for (int j = 1; j <= boardSize; j++) {
-            std::cout << "| " << boardMatrix[i - 1][j - 1] << " ";
-            // std::cout << "|   ";
+            cout << "| " << boardMatrix[i - 1][j - 1] << " ";
+            // cout << "|   ";
         }
-        std::cout << "|" << std::endl;
+        cout << "|" << endl;
     }
 }
 
@@ -54,6 +72,50 @@ void Board::printBoard() {
     Board::horizontalDivider();
 }
 
+void Board::place(int r, int c, string checker) {
+    boardMatrix[r - 1][c - 1] = checker;
+    cout << "Checker placed at " << r << char(c + int('A') - 1) << endl;
+    printBoard();
+    // TODO: legal move check
+    // TODO: flipping
+
+}
+
+void Board::startGame() {
+    cout << "Game started! Initial board:" << endl;
+    printBoard();
+
+    // TODO: loop limit fix
+    int rounds = 0;
+    while (rounds < (boardSize*boardSize - 4)) {
+        string checker;
+        if (whitesTurn) {
+            cout << "White's turn" << endl;
+            checker = WHITE;
+        }
+        else {
+            cout << "Black's turn" << endl;
+            checker = BLACK;
+        }
+
+        // move code parser
+        string moveCode; 
+        cout << "Enter move code" << endl;
+        cin >> moveCode; // TODO: normalize moveCode
+        int r = char(moveCode[0]) - '1' + 1;
+        int c = char(moveCode[1]) - 'A' + 1;
+        cout << "Moving to " << r << c << endl;
+        // TODO: invalid moveCode or occupied slot: try again
+
+        place(r, c, checker);
+        // output
+        cout << "Matrix after move: " << endl;
+        printBoard();
+        whitesTurn = !whitesTurn;
+        rounds++;
+    }
+}
+
 Board::~Board() {
-    std::cout << "Board discarded!" << std::endl;
+    cout << "Board discarded!" << endl;
 }
