@@ -4,8 +4,6 @@
 using namespace std;
 
 int main() {
-    // WARNINGS: padding not handled, n < 10 only!
-    int n;
-    cin >> n;
-    printBoard(n);
+    Board board = Board(8);
+    board.printBoard();
 }

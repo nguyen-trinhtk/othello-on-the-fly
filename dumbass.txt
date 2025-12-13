@@ -1,0 +1,17 @@
+- How to modify in place
+
+
+- Define legal moves (+ hints: all legal moves)
+- Flipping operation
+- Board storage: 2D array or map:
+> probably 2D array is the way to go, since eventually it will be nxn
+> will only save memory at first, also harder to do operations?
+
+- do a command parser
+- initialize board
+
+- do a game loop
+- how to unicode char in c++
+
+\U+2B24
+\U+2B55

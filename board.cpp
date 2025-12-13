@@ -1,37 +1,46 @@
-#include <iostream>
 #include "board.hpp"
-// using namespace std;
 
-void horizontalDivider(int n) {
-    for (int i = 0; i < ((n + 1)*4 + 1); i++) {
-            std::cout << "-";
+Board::Board() : boardSize(8) { 
+    std::cout << "8x8 Othello board successfully created!" << std::endl;
+}
+
+Board::Board(int boardSize) : boardSize(boardSize) {
+    std::cout << boardSize << "x" << boardSize << " Othello board successfully created!" << std::endl;
+}
+
+void Board::horizontalDivider() {
+    for (int i = 0; i < ((boardSize + 1)*4 + 1); i++) {
+        std::cout << "-";
     }
     std::cout << std::endl;
 }
 
-void firstNumberingRow(int n) {
+void Board::firstNumberingRow() {
     std::cout << "|   ";
-    for (int i = 1; i <=  n; i++) {
-        std::cout << "| " << i << " ";
+    for (int i = 1; i <= boardSize; i++) {
+        std::cout << "| " << char(i + 64) << " ";
     }
     std::cout << "|" << std::endl;
 }
 
-void numberedGridRows(int n) {
-    for (int i = 1; i <= n; i++) {
-        horizontalDivider(n);
+void Board::numberedGridRows() {
+    for (int i = 1; i <= boardSize; i++) {
+        Board::horizontalDivider();
         std::cout << "| " << i << " ";
-        for (int i = 1; i <= n; i++) {
+        for (int i = 1; i <= boardSize; i++) {
             std::cout << "|   ";
         }
         std::cout << "|" << std::endl;
     }
 }
 
-void printBoard(int n) {
-    // int n = 8; // 8x8 board
-    horizontalDivider(n);
-    firstNumberingRow(n);
-    numberedGridRows(n);
-    horizontalDivider(n);
+void Board::printBoard() {
+    Board::horizontalDivider();
+    Board::firstNumberingRow();
+    Board::numberedGridRows();
+    Board::horizontalDivider();
+}
+
+Board::~Board() {
+    std::cout << "Board discarded!" << std::endl;
 }
