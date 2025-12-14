@@ -1,6 +1,51 @@
 #include "board.hpp"
 
-Board::Board() : boardSize(8) { 
+string Board::validateMoveFromInput() {
+    string moveCode, moveCodeInput;
+    int r, c;
+    while (moveCode.empty()) {
+            cout << "Enter move code" << endl;
+            cin >> moveCodeInput; // TODO: normalize moveCodeInput
+            if (moveCodeInput.length() != 2) {
+                cerr << "Invalid move: wrong code format. Try again!" << endl;
+                continue;
+            }
+
+            r = char(moveCodeInput[0]) - '1' + 1;
+            c = char(moveCodeInput[1]) - 'A' + 1;
+
+            if (r < 1 || r > 8) {
+                cerr << "Invalid move: row index out of bound. Try again!" << endl;
+                continue;
+            }
+
+            if (c < 1 || c > 8) {
+                cerr << "Invalid move: column index out of bound. Try again!" << endl;
+                continue;
+            }
+
+            if (boardMatrix[r - 1][c - 1] != NOTHING) {
+                cerr << "Invalid move to occupied grid. Try again!";
+                continue;
+            }
+
+            moveCode = moveCodeInput;
+    }
+    return moveCode;
+}
+
+vector<int> Board::parseMove(string validMoveCode) {
+    int r, c; 
+    r = char(validMoveCode[0]) - '1' + 1;
+    c = char(validMoveCode[1]) - 'A' + 1;
+    vector<int> coordinate;
+    coordinate.push_back(r);
+    coordinate.push_back(c);
+    return coordinate;
+}
+
+Board::Board() : boardSize(8)
+{
     whitesTurn = true;
     clearBoard();
     initialSetup();
@@ -99,21 +144,21 @@ void Board::startGame() {
         }
 
         // move code parser
-        string moveCode; 
-        cout << "Enter move code" << endl;
-        cin >> moveCode; // TODO: normalize moveCode
-        int r = char(moveCode[0]) - '1' + 1;
-        int c = char(moveCode[1]) - 'A' + 1;
-        cout << "Moving to " << r << c << endl;
-        // TODO: invalid moveCode or occupied slot: try again
+        string moveCode = validateMoveFromInput();
+        vector<int> coordinate = parseMove(moveCode);
+        int r = coordinate[0];
+        int c = coordinate[1];
+
+        // cout << "Moving to " << r << c << endl; // for debugging
 
         place(r, c, checker);
         // output
-        cout << "Matrix after move: " << endl;
+        cout << "Board after move: " << endl;
         printBoard();
         whitesTurn = !whitesTurn;
         rounds++;
     }
+    cout << "Game over!" << endl;
 }
 
 Board::~Board() {

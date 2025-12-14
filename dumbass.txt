@@ -6,8 +6,9 @@
 - Board storage: 2D array or map:
 > probably 2D array is the way to go, since eventually it will be nxn
 > will only save memory at first, also harder to do operations?
-
-- do a command parser
+> no, if we keep it as ordered hash set, then operations is doable!!!
+> also save cost for checking (actually both is equal?)
+> keep track of frequency map for final as well? (or count later?)
 
 
 

@@ -18,6 +18,8 @@ class Board {
         const std::string NOTHING = " ";
         const std::string BLACK = "●"; // TODO: replace later with Unicode
         const std::string WHITE = "○";
+        string validateMoveFromInput();
+        vector<int> parseMove(string validMoveCode);
 
     // method
     public: 
