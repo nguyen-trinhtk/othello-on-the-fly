@@ -2,38 +2,41 @@
 #define BOARD_H
 
 #include <iostream>
-#include <vector>
 #include <string>
+#include <cstdint>
 
-#include "board.hpp"
 using namespace std;
 
 
 class Board {
     // attributes
     private: 
-        int boardSize; // TODO: must be divisible by 2
-        std::vector<std::vector<std::string> > boardMatrix; // should it be std::string?
-        bool whitesTurn; // alternate
-        const std::string NOTHING = " ";
-        const std::string BLACK = "●"; // TODO: replace later with Unicode
-        const std::string WHITE = "○";
-        string validateMoveFromInput();
-        vector<int> parseMove(string validMoveCode);
+        uint64_t white_moves = 0;
+        uint64_t black_moves = 0;
 
-    // method
+        // int current_turn; // 0 for white, 1 for black
+
+        // // Internal game methods
+        // // Basic set up
+        string get_square(int r, int c);
+        int set_square(int r, int c, bool disc);
+        int print_board();  
+        // void clear_board();
+        // void check_collision();
+        
+        // // Game logic
+        // void generate_all_valid_moves(); // Later: optmz this step knowing last flip?
+        // void parse_move(); // Loop for user to enter move
+        // void process_move(); // Apply move and flip stuffs
+        
+        // // Game end
+        // void sum_game_stats();
+
+    // public methods
     public: 
         Board();
-        Board(int boardSize);
-        void clearBoard();
-        void initialSetup();
-        void horizontalDivider();
-        void firstNumberingRow();
-        void renderRows();
-        void printBoard();
-        void place(int r, int c, string checker); // 1-indexed
-        void startGame();
-        // TODO: code parser, e.g.: move("3A") -> row 3, column A
+        int start_game();
+        // void quit_game();
         ~Board();
 };
 

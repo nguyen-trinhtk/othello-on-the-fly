@@ -1,166 +1,72 @@
 #include "board.hpp"
+#include "constants.hpp"
 
-string Board::validateMoveFromInput() {
-    string moveCode, moveCodeInput;
-    int r, c;
-    while (moveCode.empty()) {
-            cout << "Enter move code" << endl;
-            cin >> moveCodeInput; // TODO: normalize moveCodeInput
-            if (moveCodeInput.length() != 2) {
-                cerr << "Invalid move: wrong code format. Try again!" << endl;
-                continue;
-            }
+Board::Board() {
+    cout << DEBUG << MSG_CRT_BRD << endl;
+}
 
-            r = char(moveCodeInput[0]) - '1' + 1;
-            c = char(moveCodeInput[1]) - 'A' + 1;
+string Board::get_square(int r, int c) {
+    bool black = (black_moves >> (8 * r + c)) & 1;
+    bool white = (white_moves >> (8 * r + c)) & 1;
+    // Note that collisions will be handled in another function
+    if (black) {
+        return BLACK_DISC;
+    } else if (white) {
+        return WHITE_DISC;
+    } else return EMPTY_SQUARE;
+}
 
-            if (r < 1 || r > 8) {
-                cerr << "Invalid move: row index out of bound. Try again!" << endl;
-                continue;
-            }
-
-            if (c < 1 || c > 8) {
-                cerr << "Invalid move: column index out of bound. Try again!" << endl;
-                continue;
-            }
-
-            if (boardMatrix[r - 1][c - 1] != NOTHING) {
-                cerr << "Invalid move to occupied grid. Try again!";
-                continue;
-            }
-
-            moveCode = moveCodeInput;
+int Board::set_square(int r, int c, bool disc) {
+    if (disc == BLACK) {
+        black_moves |= (1ULL << (8 * r + c));
+        white_moves &= ~(1ULL << (8 * r + c));
+    } else if (disc == WHITE) {
+        white_moves |= (1ULL << (8 * r + c));
+        black_moves &= ~(1ULL << (8 * r + c));
     }
-    return moveCode;
+    return OK;
 }
 
-vector<int> Board::parseMove(string validMoveCode) {
-    int r, c; 
-    r = char(validMoveCode[0]) - '1' + 1;
-    c = char(validMoveCode[1]) - 'A' + 1;
-    vector<int> coordinate;
-    coordinate.push_back(r);
-    coordinate.push_back(c);
-    return coordinate;
-}
+int Board::print_board() {
+    // Separate from previous output
+    cout << LN_BRK; 
 
-Board::Board() : boardSize(8)
-{
-    whitesTurn = true;
-    clearBoard();
-    initialSetup();
-    cout << "8x8 Othello board successfully created!" << endl;
-}
-
-Board::Board(int boardSize) : boardSize(boardSize) {
-    whitesTurn = true;
-    clearBoard();
-    initialSetup();
-    cout << boardSize << "x" << boardSize << " Othello board successfully created!" << endl;
-}
-
-void Board::clearBoard() {
-    for (int i = 0; i < boardSize; i++) {
-        vector<string> row;
-        for (int j = 0; j < boardSize; j++) {
-            row.push_back(NOTHING);
-        }
-        boardMatrix.push_back(row);
-    }
-}
-
-void Board::initialSetup() {
-    int centers[] = {boardSize/2 - 1, boardSize/2};
-    for (int i : centers) {
-        for (int j : centers) {
-            if (i == j) {
-                boardMatrix[i][j] = BLACK;
-            }
-            else {
-                boardMatrix[i][j] = WHITE;
-            }
-        }
-    }
-}
-
-void Board::horizontalDivider() {
-    for (int i = 0; i < ((boardSize + 1)*4 + 1); i++) {
-        cout << "-";
+    // Print column header
+    cout << "   ";
+    for (char col = 'A'; col < 'A' + BOARD_SIZE; ++col) {
+        cout << "| " << col << " ";
     }
     cout << endl;
-}
 
-void Board::firstNumberingRow() {
-    cout << "|   ";
-    for (int i = 1; i <= boardSize; i++) {
-        cout << "| " << char(i + 64) << " ";
-    }
-    cout << "|" << endl;
-}
+    // Divider line
+    string divider((BOARD_SIZE + 1) * 4 - 1, '-');
 
-void Board::renderRows() {
-    for (int i = 1; i <= boardSize; i++) {
-        Board::horizontalDivider();
-        cout << "| " << i << " ";
-        for (int j = 1; j <= boardSize; j++) {
-            cout << "| " << boardMatrix[i - 1][j - 1] << " ";
-            // cout << "|   ";
+    // Print each rows
+    for (int row = 0; row < BOARD_SIZE; ++row) {
+        cout << divider << endl;
+        cout << " " << row + 1 << " ";
+        for (int col = 0; col < BOARD_SIZE; ++col) {
+            cout << "| " << get_square(row, col) << " ";
         }
-        cout << "|" << endl;
+        cout << endl;
     }
+
+    // Separate from previous output
+    cout << LN_BRK;
+
+    // Success
+    cout << DEBUG << MSG_PRNT_BRD << endl;
+    return OK;
 }
 
-void Board::printBoard() {
-    Board::horizontalDivider();
-    Board::firstNumberingRow();
-    Board::renderRows();
-    Board::horizontalDivider();
-}
-
-void Board::place(int r, int c, string checker) {
-    boardMatrix[r - 1][c - 1] = checker;
-    cout << "Checker placed at " << r << char(c + int('A') - 1) << endl;
-    printBoard();
-    // TODO: legal move check
-    // TODO: flipping
-
-}
-
-void Board::startGame() {
-    cout << "Game started! Initial board:" << endl;
-    printBoard();
-
-    // TODO: loop limit fix
-    int rounds = 0;
-    while (rounds < (boardSize*boardSize - 4)) {
-        string checker;
-        if (whitesTurn) {
-            cout << "White's turn" << endl;
-            checker = WHITE;
-        }
-        else {
-            cout << "Black's turn" << endl;
-            checker = BLACK;
-        }
-
-        // move code parser
-        string moveCode = validateMoveFromInput();
-        vector<int> coordinate = parseMove(moveCode);
-        int r = coordinate[0];
-        int c = coordinate[1];
-
-        // cout << "Moving to " << r << c << endl; // for debugging
-
-        place(r, c, checker);
-        // output
-        cout << "Board after move: " << endl;
-        printBoard();
-        whitesTurn = !whitesTurn;
-        rounds++;
-    }
-    cout << "Game over!" << endl;
+int Board::start_game() {
+    print_board();
+    // set_square(1 - 1, 2 - 1, 1);
+    // print_board();
+    return OK;
 }
 
 Board::~Board() {
-    cout << "Board discarded!" << endl;
+    cout << DEBUG << MSG_DSTRCT_BRD << endl;
 }
+

@@ -2,10 +2,11 @@ CXX := clang++
 CXXFLAGS := -Wall
 
 SRC = main.cpp board.cpp
-TARGET = play
+TARGET = othello
 
 $(TARGET) : $(SRC)
 	$(CXX) $(CXXFLAGS) $(SRC) -o $(TARGET)
 
 .PHONY: clean
+clean:
 	rm -rf $(TARGET)
