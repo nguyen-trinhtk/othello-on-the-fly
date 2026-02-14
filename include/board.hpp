@@ -16,6 +16,7 @@ class Board {
         uint64_t black_moves;
 
         bool current_turn;
+        vector<pair<int, int>> valid_moves; // Later: cache?
 
         // // Internal game methods
         // // Basic set up
@@ -26,8 +27,8 @@ class Board {
         int check_collision();
         
         // // Game logic
-        // void generate_all_valid_moves(); // Later: optmz this step knowing last flip?
-         pair<int, int> parse_move(); // Loop for user to enter move
+        int get_valid_moves(); // Later: optmz this step knowing last flip?
+        pair<int, int> parse_move(); // Loop for user to enter move
         // void process_move(); // Apply move and flip stuffs
         
         // // Game end
