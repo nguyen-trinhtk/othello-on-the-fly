@@ -1,4 +1,4 @@
-CXX := clang
+CXX := clang++
 CXXFLAGS := -Wall -Iinclude
 
 SRC_DIR := src
