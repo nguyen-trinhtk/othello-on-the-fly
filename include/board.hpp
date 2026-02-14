@@ -4,6 +4,7 @@
 #include <iostream>
 #include <string>
 #include <cstdint>
+// #include <utility>
 
 using namespace std;
 
@@ -14,7 +15,7 @@ class Board {
         uint64_t white_moves;
         uint64_t black_moves;
 
-        // int current_turn; // 0 for white, 1 for black
+        bool current_turn;
 
         // // Internal game methods
         // // Basic set up
@@ -26,7 +27,7 @@ class Board {
         
         // // Game logic
         // void generate_all_valid_moves(); // Later: optmz this step knowing last flip?
-        // void parse_move(); // Loop for user to enter move
+         pair<int, int> parse_move(); // Loop for user to enter move
         // void process_move(); // Apply move and flip stuffs
         
         // // Game end
