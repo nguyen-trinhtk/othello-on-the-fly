@@ -2,13 +2,18 @@
 #include "constants.hpp"
 
 Board::Board() {
-    cout << DEBUG << MSG_CRT_BRD << endl;
+    this->white_moves = INIT_BOARD_WHITE;
+    this->black_moves = INIT_BOARD_BLACK;
+    if (check_collision() != OK) {
+        cout << DEBUG << MSG_ERR_CREATE_BOARD << endl;
+        return;
+    }
+    cout << DEBUG << MSG_CREATED_BOARD << endl;
 }
 
 string Board::get_square(int r, int c) {
     bool black = (black_moves >> (8 * r + c)) & 1;
     bool white = (white_moves >> (8 * r + c)) & 1;
-    // Note that collisions will be handled in another function
     if (black) {
         return BLACK_DISC;
     } else if (white) {
@@ -55,18 +60,32 @@ int Board::print_board() {
     cout << LN_BRK;
 
     // Success
-    cout << DEBUG << MSG_PRNT_BRD << endl;
+    cout << DEBUG << MSG_PRINTED_BOARD << endl;
+    return OK;
+}
+
+int Board::clear_board() {
+    white_moves = 0;
+    black_moves = 0;
+    return OK;
+}
+
+int Board::check_collision() {
+    if (white_moves & black_moves) {
+        cout << DEBUG << MSG_ERR_COLLISION << endl;
+        return ERR_COLLISION;
+    }
+
     return OK;
 }
 
 int Board::start_game() {
     print_board();
-    // set_square(1 - 1, 2 - 1, 1);
-    // print_board();
+    check_collision();
     return OK;
 }
 
 Board::~Board() {
-    cout << DEBUG << MSG_DSTRCT_BRD << endl;
+    cout << DEBUG << MSG_DESTRUCT_BOARD << endl;
 }
 

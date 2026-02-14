@@ -11,8 +11,8 @@ using namespace std;
 class Board {
     // attributes
     private: 
-        uint64_t white_moves = 0;
-        uint64_t black_moves = 0;
+        uint64_t white_moves;
+        uint64_t black_moves;
 
         // int current_turn; // 0 for white, 1 for black
 
@@ -21,8 +21,8 @@ class Board {
         string get_square(int r, int c);
         int set_square(int r, int c, bool disc);
         int print_board();  
-        // void clear_board();
-        // void check_collision();
+        int clear_board();
+        int check_collision();
         
         // // Game logic
         // void generate_all_valid_moves(); // Later: optmz this step knowing last flip?
