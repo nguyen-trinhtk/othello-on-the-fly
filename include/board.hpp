@@ -20,16 +20,21 @@ class Board {
 
         // // Internal game methods
         // // Basic set up
-        string get_square(int r, int c);
-        int set_square(int r, int c, bool disc);
+        int get_square(int r, int c);
+        string print_square(int disc);
+        int set_square(int r, int c, int disc);
         int print_board();  
         int clear_board();
         int check_collision();
         
+
         // // Game logic
-        int get_valid_moves(); // Later: optmz this step knowing last flip?
         pair<int, int> parse_move(); // Loop for user to enter move
-        // void process_move(); // Apply move and flip stuffs
+        bool is_valid_move(int r, int c, bool player);
+
+        // This will return the number of valid moves and populate the valid_moves vector. Later: optmz this step knowing last flip?// Later: optmz this step knowing last flip?
+        int get_valid_moves();        // void process_move(); // Apply move and flip stuffs
+        int process_move(int r, int c, bool player); // Apply move and flip stuffs
         
         // // Game end
         // void sum_game_stats();
