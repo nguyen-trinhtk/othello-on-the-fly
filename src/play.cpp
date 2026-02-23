@@ -65,12 +65,12 @@ int Board::autoplay() {
         cout << ((current_turn == BLACK) ? "Black" : "White") << " plays: " << char('A' + move.second) << (move.first + 1) << endl;
         process_move(move.first, move.second, current_turn);
         current_turn = !current_turn;
-        // Sleep for 0.5 seconds between moves
-        #ifdef _WIN32
-        Sleep(500);
-        #else
-        usleep(500000);
-        #endif
+        // // Sleep for 0.5 seconds between moves
+        // #ifdef _WIN32
+        // Sleep(500);
+        // #else
+        // usleep(500000);
+        // #endif
     }
     print_board();
     sum_game_stats();

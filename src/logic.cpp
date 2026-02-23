@@ -48,31 +48,37 @@ pair<int, int> Board::parse_move() {
 }
 
 bool Board::is_valid_move(int r, int c, bool player) {
+    uint64_t move_bit = 1ULL << (8 * r + c);
+    if ((black_moves | white_moves) & move_bit) return false; // Not empty
 
-    if (get_square(r, c) != EMPTY) {
-        return false;
-    }
+    uint64_t player_bits = player == BLACK ? black_moves : white_moves;
+    uint64_t opp_bits = player == BLACK ? white_moves : black_moves;
 
-    for (int i = 0; i < 8; i++) {
-        int dr = DIRECTION_X[i];
-        int dc = DIRECTION_Y[i];
+    // Directional shift amounts for N, S, E, W, NE, NW, SE, SW
+    const int dir_shifts[8] = {8, -8, 1, -1, 9, 7, -7, -9};
+    const uint64_t notA = 0xfefefefefefefefeULL;
+    const uint64_t notH = 0x7f7f7f7f7f7f7f7fULL;
 
-        // Neighbor in direction (dr, dc)
-        int nr = r + dr;
-        int nc = c + dc;
+    for (int d = 0; d < 8; ++d) {
+        uint64_t mask = 0;
+        uint64_t cur = move_bit;
+        for (int step = 0; step < 7; ++step) {
+            // Edge masking for left/right directions
+            if ((d == 2 || d == 4 || d == 6) && (cur & notH) == 0) break;
+            if ((d == 3 || d == 5 || d == 7) && (cur & notA) == 0) break;
 
-        // Check if neighbor is opponent's disc
-        if (nr >= 0 && nr < BOARD_SIZE && nc >= 0 && nc < BOARD_SIZE && get_square(nr, nc) == !player) {
-            // Traverse in the same direction
-            while (nr >= 0 && nr < BOARD_SIZE && nc >= 0 && nc < BOARD_SIZE) {
-                if (get_square(nr, nc) == EMPTY) {
-                    break; // No disc to flip in this direction
-                }
-                if (get_square(nr, nc) == player) {
-                    return true; // Valid move found
-                }
-                nr += dr;
-                nc += dc;
+            // Shift in direction
+            if (dir_shifts[d] > 0)
+                cur <<= dir_shifts[d];
+            else
+                cur >>= -dir_shifts[d];
+
+            if ((cur & opp_bits) != 0) {
+                mask |= cur;
+            } else {
+                if ((cur & player_bits) != 0 && mask != 0)
+                    return true;
+                break;
             }
         }
     }
@@ -94,39 +100,50 @@ int Board::get_valid_moves() {
 }
 
 int Board::process_move(int r, int c, bool player) {
-    set_square(r, c, player);
+    uint64_t move_bit = 1ULL << (8 * r + c);
+    uint64_t player_bits = player == BLACK ? black_moves : white_moves;
+    uint64_t opp_bits = player == BLACK ? white_moves : black_moves;
 
-    for (int i = 0; i < 8; i++) {
-        int dr = DIRECTION_X[i];
-        int dc = DIRECTION_Y[i];
+    // Directional shift amounts for N, S, E, W, NE, NW, SE, SW
+    const int dir_shifts[8] = {8, -8, 1, -1, 9, 7, -7, -9};
+    const uint64_t notA = 0xfefefefefefefefeULL;
+    const uint64_t notH = 0x7f7f7f7f7f7f7f7fULL;
 
-        // Neighbor in direction (dr, dc)
-        int nr = r + dr;
-        int nc = c + dc;
+    uint64_t to_flip = 0;
 
-        // Check if neighbor is opponent's disc
-        if (nr >= 0 && nr < BOARD_SIZE && nc >= 0 && nc < BOARD_SIZE && get_square(nr, nc) == !player) {
-            // Traverse in the same direction
-            while (nr >= 0 && nr < BOARD_SIZE && nc >= 0 && nc < BOARD_SIZE) {
-                if (get_square(nr, nc) == EMPTY) {
-                    break; // No disc to flip in this direction
+    for (int d = 0; d < 8; ++d) {
+        uint64_t mask = 0;
+        uint64_t cur = move_bit;
+        for (int step = 0; step < 7; ++step) {
+            // Edge masking for left/right directions
+            if ((d == 2 || d == 4 || d == 6) && (cur & notH) == 0) break;
+            if ((d == 3 || d == 5 || d == 7) && (cur & notA) == 0) break;
+
+            // Shift in direction
+            if (dir_shifts[d] > 0)
+                cur <<= dir_shifts[d];
+            else
+                cur >>= -dir_shifts[d];
+
+            if ((cur & opp_bits) != 0) {
+                mask |= cur;
+            } else {
+                if ((cur & player_bits) != 0 && mask != 0) {
+                    to_flip |= mask;
                 }
-                if (get_square(nr, nc) == player) {
-                    // Flip discs in this direction
-                    int flip_r = r + dr;
-                    int flip_c = c + dc;
-                    while (flip_r != nr || flip_c != nc) {
-                        set_square(flip_r, flip_c, player);
-                        flip_r += dr;
-                        flip_c += dc;
-                    }
-                    break;
-                }
-                nr += dr;
-                nc += dc;
+                break;
             }
         }
     }
 
+    // Place the new disc
+    if (player == BLACK) {
+        black_moves |= move_bit | to_flip;
+        white_moves &= ~to_flip;
+    } else {
+        white_moves |= move_bit | to_flip;
+        black_moves &= ~to_flip;
+    }
+    cout << "I'm new" << endl;
     return OK;
 }
