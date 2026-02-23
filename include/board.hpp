@@ -10,13 +10,15 @@ using namespace std;
 
 
 class Board {
+        // Debug helpers
+        void debug_valid_moves();
     // attributes
     private: 
         uint64_t white_moves;
         uint64_t black_moves;
 
         bool current_turn;
-        vector<pair<int, int>> valid_moves; // Later: cache?
+        vector<pair<int, int> > valid_moves; // Later: cache?
 
         // // Internal game methods
         // // Basic set up

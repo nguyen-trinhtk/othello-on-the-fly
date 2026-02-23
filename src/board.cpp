@@ -82,11 +82,6 @@ int Board::check_collision() {
     return OK;
 }
 
-
-
-int Board::start_game() {
-}
-
 Board::~Board() {
     cout << DEBUG << MSG_DESTRUCT_BOARD << endl;
 }

@@ -3,9 +3,9 @@
 
 // Board related macros
 #define BOARD_SIZE 8
-#define BLACK 1
-#define WHITE 2
-#define EMPTY 3
+#define BLACK 0
+#define WHITE 1
+#define EMPTY -1
 
 // - Square states
 #define BLACK_DISC "●"
@@ -34,6 +34,7 @@ const int DIRECTION_Y[8] = {-1, 0, 1, -1, 1, -1, 0, 1};
 #define MSG_CREATED_BOARD "Board successfully created"
 #define MSG_PRINTED_BOARD "Board printed"
 #define MSG_DESTRUCT_BOARD "Cleaning board..."
+#define MSG_STARTING_GAME "Starting game..."
 
 // - Error messages
 #define MSG_ERR_COLLISION "Error: collision detected, please debug!"
@@ -45,7 +46,7 @@ const int DIRECTION_Y[8] = {-1, 0, 1, -1, 1, -1, 0, 1};
 #define MSG_ERR_INVALID_MOVE_FORMAT "Invalid move format, try again!"
 #define MSG_ERR_OUT_OF_BOUNDS "Row or column index out of bounds, try again"
 #define MSG_ERR_SQUARE_OCCUPIED "Square already occupied, try again!"
-
+#define MSG_ERR_INVALID_MOVE "Invalid move, try again!"
 // Formatting
 #define DEBUG "[DEBUG] "
 #define LN_BRK "\n"

@@ -6,7 +6,7 @@ pair<int, int> Board::parse_move() {
     string move_str;
     string current_player = (current_turn == BLACK) ? "Black" : "White";
     int row, col;
-    cout << current_player << "'s turn! ";
+    cout << current_player << "'s turn! " << endl;
 
     while (1) {
         cout << "Enter your move: ";
@@ -32,9 +32,13 @@ pair<int, int> Board::parse_move() {
         col = move_str[0] - 'A';
         row = move_str[1] - '1';
 
-        // Check if square is empty
-        if (get_square(row, col) != EMPTY) {
-            cout << MSG_ERR_SQUARE_OCCUPIED << endl;
+        // Check if move is valid according to Othello rules
+        if (!is_valid_move(row, col, current_turn)) {
+            if (get_square(row, col) != EMPTY) {
+                cout << MSG_ERR_SQUARE_OCCUPIED << endl;
+            } else {
+                cout << MSG_ERR_INVALID_MOVE << endl;
+            }
             continue;
         }
 
@@ -51,7 +55,7 @@ bool Board::is_valid_move(int r, int c, bool player) {
         return false;
     }
 
-    for (int i = 0; i < 8; ++i) {
+    for (int i = 0; i < 8; i++) {
         int dr = DIRECTION_X[i];
         int dc = DIRECTION_Y[i];
 
@@ -94,7 +98,7 @@ int Board::get_valid_moves() {
 int Board::process_move(int r, int c, bool player) {
     set_square(r, c, player);
 
-    for (int i = 0; i < 8; ++i) {
+    for (int i = 0; i < 8; i++) {
         int dr = DIRECTION_X[i];
         int dc = DIRECTION_Y[i];
 
