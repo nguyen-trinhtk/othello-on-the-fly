@@ -41,11 +41,9 @@ pair<int, int> Board::parse_move() {
             }
             continue;
         }
-
-        cout << DEBUG << current_player << " placed disc at " << move_str << endl;
+        cout << current_player << " placed disc at " << move_str << endl;
         break;
     }
-
     return make_pair(row, col);
 }
 
@@ -83,7 +81,7 @@ bool Board::is_valid_move(int r, int c, bool player) {
 
 int Board::get_valid_moves() {
     valid_moves.clear();
-
+    // Scan the whole board for valid moves
     for (int r = 0; r < BOARD_SIZE; ++r) {
         for (int c = 0; c < BOARD_SIZE; ++c) {
             if (is_valid_move(r, c, current_turn)) {

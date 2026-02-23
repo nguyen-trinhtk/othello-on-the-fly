@@ -1,5 +1,5 @@
-CXX := clang++
-CXXFLAGS := -Wall -Iinclude
+CXX := g++
+CXXFLAGS := -Wall -Iinclude -std=c++11
 
 SRC_DIR := src
 INC_DIR := include

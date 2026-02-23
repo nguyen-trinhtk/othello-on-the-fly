@@ -8,10 +8,10 @@ Board::Board() {
     this->current_turn = BLACK; // Black first
 
     if (check_collision() != OK) {
-        cout << DEBUG << MSG_ERR_CREATE_BOARD << endl;
+        cout << MSG_ERR_CREATE_BOARD << endl;
         return;
     }
-    cout << DEBUG << MSG_CREATED_BOARD << endl;
+    cout << MSG_CREATED_BOARD << endl;
 }
 
 // Basic board operations
@@ -29,7 +29,7 @@ string Board::print_square(int disc) {
     else if (disc == WHITE) return WHITE_DISC;
     else if (disc == EMPTY) return EMPTY_SQUARE;
     else {
-        cout << DEBUG << MSG_ERR_INVALID_DISC << endl;
+        cout << MSG_ERR_INVALID_DISC << endl;
         return INVALID_SQUARE;
     }
 }
@@ -41,7 +41,7 @@ int Board::set_square(int r, int c, int disc) {
         white_moves |= (1ULL << (8 * r + c));
         black_moves &= ~(1ULL << (8 * r + c));
     } else {
-        cout << DEBUG << MSG_ERR_INVALID_DISC << endl;
+        cout << MSG_ERR_INVALID_DISC << endl;
         return ERR_INVALID_DISC;
     }
     return OK;
@@ -65,7 +65,7 @@ int Board::print_board() {
         cout << endl;
     }
     cout << LN_BRK;
-    cout << DEBUG << MSG_PRINTED_BOARD << endl;
+    // cout << DEBUG << MSG_PRINTED_BOARD << endl;
     return OK;
 }
 int Board::clear_board() {
@@ -75,7 +75,7 @@ int Board::clear_board() {
 }
 int Board::check_collision() {
     if (white_moves & black_moves) {
-        cout << DEBUG << MSG_ERR_COLLISION << endl;
+        cout << MSG_ERR_COLLISION << endl;
         return ERR_COLLISION;
     }
 
@@ -83,6 +83,6 @@ int Board::check_collision() {
 }
 
 Board::~Board() {
-    cout << DEBUG << MSG_DESTRUCT_BOARD << endl;
+    // cout << DEBUG << MSG_DESTRUCT_BOARD << endl;
 }
 

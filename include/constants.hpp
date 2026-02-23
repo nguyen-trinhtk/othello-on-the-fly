@@ -47,6 +47,7 @@ const int DIRECTION_Y[8] = {-1, 0, 1, -1, 1, -1, 0, 1};
 #define MSG_ERR_OUT_OF_BOUNDS "Row or column index out of bounds, try again"
 #define MSG_ERR_SQUARE_OCCUPIED "Square already occupied, try again!"
 #define MSG_ERR_INVALID_MOVE "Invalid move, try again!"
+
 // Formatting
 #define DEBUG "[DEBUG] "
 #define LN_BRK "\n"
