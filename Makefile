@@ -1,11 +1,20 @@
 CXX := clang++
-CXXFLAGS := -Wall
+CXXFLAGS := -Wall -Iinclude
 
-SRC = main.cpp board.cpp
-TARGET = play
+SRC_DIR := src
+INC_DIR := include
+BIN_DIR := bin
+SRC := $(wildcard $(SRC_DIR)/*.cpp)
+TARGET := $(BIN_DIR)/othello
 
-$(TARGET) : $(SRC)
+$(TARGET): $(SRC)
+	@mkdir -p $(BIN_DIR)
 	$(CXX) $(CXXFLAGS) $(SRC) -o $(TARGET)
 
+.PHONY: run
+run: $(TARGET)
+	$(TARGET)
+
 .PHONY: clean
-	rm -rf $(TARGET)
+clean:
+	rm -rf $(BIN_DIR)

@@ -1,0 +1,6 @@
+# IDEs
+.vscode/*
+
+# Compiled object files
+bin/*
+*.o
