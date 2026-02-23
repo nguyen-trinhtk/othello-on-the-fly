@@ -4,6 +4,8 @@
 #include <iostream>
 #include <string>
 #include <cstdint>
+#include <vector>
+#include <algorithm>
 
 using namespace std;
 
@@ -38,6 +40,7 @@ class Board {
     public: 
         Board();
         int start_game();
+        int autoplay();
         ~Board();
 };
 

@@ -1,5 +1,5 @@
-CXX := g++
-CXXFLAGS := -Wall -Iinclude -std=c++11
+CXX := /opt/homebrew/bin/g++-15
+CXXFLAGS := -Wall -Iinclude -std=c++11 -pg
 
 SRC_DIR := src
 INC_DIR := include

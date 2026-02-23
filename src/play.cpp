@@ -1,5 +1,6 @@
 #include "board.hpp"
 #include "constants.hpp"
+#include <unistd.h>
 
 void Board::sum_game_stats() {
     // Count discs using bit manipulation
@@ -41,4 +42,37 @@ int Board::start_game() {
     print_board();
     sum_game_stats();
     return OK;
+}
+
+int Board::autoplay() {
+    cout << "[DEBUG] Starting autoplay..." << endl;
+    bool game_over = false;
+    while (!game_over) {
+        print_board();
+        int valid_moves_count = get_valid_moves();
+        if (valid_moves_count == 0) {
+            cout << "No valid moves for " << ((current_turn == BLACK) ? "Black" : "White") << ". Skipping turn." << endl;
+            current_turn = !current_turn;
+            valid_moves_count = get_valid_moves();
+            if (valid_moves_count == 0) {
+                cout << "No valid moves for both players. Game over." << endl;
+                game_over = true;
+                continue;
+            }
+        }
+        // Pick the first valid move
+        pair<int, int> move = valid_moves[0];
+        cout << ((current_turn == BLACK) ? "Black" : "White") << " plays: " << char('A' + move.second) << (move.first + 1) << endl;
+        process_move(move.first, move.second, current_turn);
+        current_turn = !current_turn;
+        // Sleep for 0.5 seconds between moves
+        #ifdef _WIN32
+        Sleep(500);
+        #else
+        usleep(500000);
+        #endif
+    }
+    print_board();
+    sum_game_stats();
+    return 0;
 }
