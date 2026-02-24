@@ -4,3 +4,6 @@
 # Compiled object files
 bin/*
 *.o
+
+# Individual files
+gmon.out
