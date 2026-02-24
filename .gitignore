@@ -6,5 +6,4 @@ bin/*
 *.o
 
 # Individual files
-todo.md
-myowntodo.md
+gmon.out

@@ -1,6 +1,5 @@
 #include <iostream>
 #include "board.hpp"
-#include "constants.hpp"
 
 using namespace std;
 

@@ -1,5 +1,4 @@
 #include "board.hpp"
-#include "constants.hpp"
 
 pair<int, int> Board::parse_move() {
     // Loop for user to enter move
@@ -48,12 +47,7 @@ pair<int, int> Board::parse_move() {
 }
 
 bool Board::is_valid_move(int r, int c, bool player) {
-    for (const auto& move : valid_moves) {
-        if (move.first == r && move.second == c) {
-            return true;
-        }
-    }
-    return false;
+    return valid_moves.find(std::make_pair(r, c)) != valid_moves.end();
 }
 
 int Board::get_valid_moves() {
@@ -63,9 +57,6 @@ int Board::get_valid_moves() {
     uint64_t empty = ~(black_moves | white_moves);
 
     uint64_t moves = 0;
-    const uint64_t notA = 0xfefefefefefefefeULL;
-    const uint64_t notH = 0x7f7f7f7f7f7f7f7fULL;
-    // Use Dir and dirs from constants.hpp
 
     for (int d = 0; d < 8; ++d) {
         uint64_t mask = 0;
@@ -87,12 +78,12 @@ int Board::get_valid_moves() {
         moves |= mask & empty;
     }
 
-    // Fill valid_moves vector from bitboard
+    // Fill valid_moves set from bitboard
     for (int i = 0; i < 64; ++i) {
         if ((moves >> i) & 1) {
             int r = i / 8;
             int c = i % 8;
-            valid_moves.emplace_back(r, c);
+            valid_moves.insert(std::make_pair(r, c));
         }
     }
     // Debug print all valid moves
@@ -108,10 +99,6 @@ int Board::process_move(int r, int c, bool player) {
     uint64_t move_bit = 1ULL << (8 * r + c);
     uint64_t player_bits = player == BLACK ? black_moves : white_moves;
     uint64_t opp_bits = player == BLACK ? white_moves : black_moves;
-
-    const uint64_t notA = 0xfefefefefefefefeULL;
-    const uint64_t notH = 0x7f7f7f7f7f7f7f7fULL;
-    // Use Dir and dirs from constants.hpp
 
     uint64_t to_flip = 0;
 

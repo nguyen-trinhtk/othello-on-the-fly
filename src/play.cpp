@@ -1,5 +1,4 @@
 #include "board.hpp"
-#include "constants.hpp"
 #include <unistd.h>
 
 void Board::sum_game_stats() {
@@ -61,7 +60,7 @@ int Board::autoplay() {
             }
         }
         // Pick the first valid move
-        pair<int, int> move = valid_moves[0];
+        pair<int, int> move = *valid_moves.begin();
         cout << ((current_turn == BLACK) ? "Black" : "White") << " plays: " << char('A' + move.second) << (move.first + 1) << endl;
         process_move(move.first, move.second, current_turn);
         current_turn = !current_turn;

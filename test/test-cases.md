@@ -1,3 +1,5 @@
+Continue chat: https://claude.ai/chat/c4340562-818b-4dec-a324-b698d2675dd2
+
 # Othello Valid Move Test Cases
 
 This file contains a set of test case descriptions for validating Othello (Reversi) move generation logic. Each test case describes a board state and the expected valid moves for a given player.
