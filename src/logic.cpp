@@ -48,38 +48,9 @@ pair<int, int> Board::parse_move() {
 }
 
 bool Board::is_valid_move(int r, int c, bool player) {
-    uint64_t move_bit = 1ULL << (8 * r + c);
-    if ((black_moves | white_moves) & move_bit) return false; // Not empty
-
-    uint64_t player_bits = player == BLACK ? black_moves : white_moves;
-    uint64_t opp_bits = player == BLACK ? white_moves : black_moves;
-
-    // Directional shift amounts for N, S, E, W, NE, NW, SE, SW
-    const int dir_shifts[8] = {8, -8, 1, -1, 9, 7, -7, -9};
-    const uint64_t notA = 0xfefefefefefefefeULL;
-    const uint64_t notH = 0x7f7f7f7f7f7f7f7fULL;
-
-    for (int d = 0; d < 8; ++d) {
-        uint64_t mask = 0;
-        uint64_t cur = move_bit;
-        for (int step = 0; step < 7; ++step) {
-            // Edge masking for left/right directions
-            if ((d == 2 || d == 4 || d == 6) && (cur & notH) == 0) break;
-            if ((d == 3 || d == 5 || d == 7) && (cur & notA) == 0) break;
-
-            // Shift in direction
-            if (dir_shifts[d] > 0)
-                cur <<= dir_shifts[d];
-            else
-                cur >>= -dir_shifts[d];
-
-            if ((cur & opp_bits) != 0) {
-                mask |= cur;
-            } else {
-                if ((cur & player_bits) != 0 && mask != 0)
-                    return true;
-                break;
-            }
+    for (const auto& move : valid_moves) {
+        if (move.first == r && move.second == c) {
+            return true;
         }
     }
     return false;
@@ -87,15 +58,49 @@ bool Board::is_valid_move(int r, int c, bool player) {
 
 int Board::get_valid_moves() {
     valid_moves.clear();
-    // Scan the whole board for valid moves
-    for (int r = 0; r < BOARD_SIZE; ++r) {
-        for (int c = 0; c < BOARD_SIZE; ++c) {
-            if (is_valid_move(r, c, current_turn)) {
-                valid_moves.emplace_back(r, c);
-            }
+    uint64_t player_bits = current_turn == BLACK ? black_moves : white_moves;
+    uint64_t opp_bits = current_turn == BLACK ? white_moves : black_moves;
+    uint64_t empty = ~(black_moves | white_moves);
+
+    uint64_t moves = 0;
+    const uint64_t notA = 0xfefefefefefefefeULL;
+    const uint64_t notH = 0x7f7f7f7f7f7f7f7fULL;
+    // Use Dir and dirs from constants.hpp
+
+    for (int d = 0; d < 8; ++d) {
+        uint64_t mask = 0;
+        uint64_t candidates = player_bits;
+        for (int step = 0; step < 6; ++step) {
+            if (dirs[d].shift > 0)
+                candidates = (candidates & dirs[d].mask) << dirs[d].shift;
+            else
+                candidates = (candidates & dirs[d].mask) >> -dirs[d].shift;
+            mask |= candidates & opp_bits;
+            candidates &= opp_bits;
+            if (!candidates) break;
         }
+        // Final shift
+        if (dirs[d].shift > 0)
+            mask = (mask & dirs[d].mask) << dirs[d].shift;
+        else
+            mask = (mask & dirs[d].mask) >> -dirs[d].shift;
+        moves |= mask & empty;
     }
 
+    // Fill valid_moves vector from bitboard
+    for (int i = 0; i < 64; ++i) {
+        if ((moves >> i) & 1) {
+            int r = i / 8;
+            int c = i % 8;
+            valid_moves.emplace_back(r, c);
+        }
+    }
+    // Debug print all valid moves
+    cout << "Valid moves: ";
+    for (const auto& mv : valid_moves) {
+        cout << char('A' + mv.second) << (mv.first + 1) << " ";
+    }
+    cout << endl;
     return valid_moves.size();
 }
 
@@ -104,10 +109,9 @@ int Board::process_move(int r, int c, bool player) {
     uint64_t player_bits = player == BLACK ? black_moves : white_moves;
     uint64_t opp_bits = player == BLACK ? white_moves : black_moves;
 
-    // Directional shift amounts for N, S, E, W, NE, NW, SE, SW
-    const int dir_shifts[8] = {8, -8, 1, -1, 9, 7, -7, -9};
     const uint64_t notA = 0xfefefefefefefefeULL;
     const uint64_t notH = 0x7f7f7f7f7f7f7f7fULL;
+    // Use Dir and dirs from constants.hpp
 
     uint64_t to_flip = 0;
 
@@ -115,15 +119,11 @@ int Board::process_move(int r, int c, bool player) {
         uint64_t mask = 0;
         uint64_t cur = move_bit;
         for (int step = 0; step < 7; ++step) {
-            // Edge masking for left/right directions
-            if ((d == 2 || d == 4 || d == 6) && (cur & notH) == 0) break;
-            if ((d == 3 || d == 5 || d == 7) && (cur & notA) == 0) break;
-
-            // Shift in direction
-            if (dir_shifts[d] > 0)
-                cur <<= dir_shifts[d];
+            // Edge masking and shifting
+            if (dirs[d].shift > 0)
+                cur = (cur & dirs[d].mask) << dirs[d].shift;
             else
-                cur >>= -dir_shifts[d];
+                cur = (cur & dirs[d].mask) >> -dirs[d].shift;
 
             if ((cur & opp_bits) != 0) {
                 mask |= cur;

@@ -1,3 +1,23 @@
+// Bitboard direction struct and array for Othello
+#include <cstdint>
+struct Dir {
+	int shift;
+	uint64_t mask;
+};
+constexpr uint64_t notA = 0xfefefefefefefefeULL;
+constexpr uint64_t notH = 0x7f7f7f7f7f7f7f7fULL;
+constexpr Dir dirs[8] = {
+	{-8, 0xFFFFFFFFFFFFFFFFULL}, // N
+	{ 8, 0xFFFFFFFFFFFFFFFFULL}, // S
+	{ 1, notH},                  // E
+	{-1, notA},                  // W
+	{-7, notH},                  // NE
+	{-9, notA},                  // NW
+	{ 9, notH},                  // SE
+	{ 7, notA},                  // SW
+};
+// Directional shift amounts for N, S, E, W, NE, NW, SE, SW (bitboard)
+constexpr int dir_shifts[8] = {-8, 8, 1, -1, -7, -9, 9, 7};
 #ifndef CONSTANTS_H
 #define CONSTANTS_H
 
