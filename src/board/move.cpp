@@ -50,7 +50,7 @@ bool Board::is_valid_move(int r, int c, bool player) {
     return valid_moves.find(std::make_pair(r, c)) != valid_moves.end();
 }
 
-int Board::get_valid_moves() {
+int Board::compute_valid_moves() {
     valid_moves.clear();
     uint64_t player_bits = current_turn == BLACK ? black_moves : white_moves;
     uint64_t opp_bits = current_turn == BLACK ? white_moves : black_moves;
@@ -134,3 +134,4 @@ int Board::process_move(int r, int c, bool player) {
     cout << "I'm new" << endl;
     return OK;
 }
+
