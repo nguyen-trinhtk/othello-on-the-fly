@@ -1,11 +1,10 @@
 #include <iostream>
-#include "board.hpp"
+#include "game.hpp"
 
-using namespace std;
-
-int main() {
-    Board board = Board();
-    board.start_game();
-    // board.autoplay();
-    return OK;
+int main()
+{
+    Game game;
+    game.play_pvp();
+    // game.autoplay();
+    return 0;
 }

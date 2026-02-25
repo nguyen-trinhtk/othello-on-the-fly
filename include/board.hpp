@@ -81,18 +81,12 @@ private:
         }
         return OK;
     }
-
-    int print_board();
     void clear_terminal();
 
     // Game logic
-    pair<int, int> parse_move(); // Loop for user to enter move
     bool is_valid_move(int r, int c, bool player);
 
-    // Game end
-    void sum_game_stats();
-
-    // Public methods
+// Public methods
 public:
     Board();
 
@@ -116,12 +110,42 @@ public:
     }
 
     // Moves
+    // Returns true if neither player has valid moves
+    inline bool is_game_over()
+    {
+        // Save current turn
+        bool original_turn = current_turn;
+        // Check for black
+        current_turn = BLACK;
+        int black_moves_count = compute_valid_moves();
+        // Check for white
+        current_turn = WHITE;
+        int white_moves_count = compute_valid_moves();
+        // Restore turn
+        current_turn = original_turn;
+        return black_moves_count == 0 && white_moves_count == 0;
+    }
+
+    // Getter for valid_moves
+    inline const unordered_set<std::pair<int, int>, pair_hash> &get_valid_moves() const
+    {
+        return valid_moves;
+    }
+    inline bool get_current_player() {
+        return current_turn;
+    }
+
+    inline void set_current_player(bool player) {
+        current_turn = player;
+    }
+
     int compute_valid_moves();
     int process_move(int r, int c, bool player);
+    int print_board();
+    pair<int, int> parse_move(); // Loop for user to enter move
 
-    // Gameplay
-    int start_game();
-    int autoplay();
+    // Game end
+    void sum_game_stats();
     ~Board();
 };
 

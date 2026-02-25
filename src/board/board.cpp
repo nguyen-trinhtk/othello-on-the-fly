@@ -35,6 +35,25 @@ int Board::print_board() {
     return OK;
 }
 
+void Board::sum_game_stats()
+{
+    int black_count = get_black_count();
+    int white_count = get_white_count();
+    cout << "Final Score: Black = " << black_count << ", White = " << white_count << endl;
+    if (black_count > white_count)
+    {
+        cout << "Black wins!" << endl;
+    }
+    else if (white_count > black_count)
+    {
+        cout << "White wins!" << endl;
+    }
+    else
+    {
+        cout << "It's a draw!" << endl;
+    }
+}
+
 Board::~Board() {
     // cout << DEBUG << MSG_DESTRUCT_BOARD << endl;
 }
