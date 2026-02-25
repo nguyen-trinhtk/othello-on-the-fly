@@ -4,7 +4,7 @@
 int main()
 {
     Game game;
-    game.play_pvp();
+    game.play_pve();
     // game.autoplay();
     return 0;
 }

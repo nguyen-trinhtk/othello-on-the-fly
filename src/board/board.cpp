@@ -13,7 +13,8 @@ void Board::clear_terminal() {
 }
 
 int Board::print_board() {
-    clear_terminal();
+    // clear_terminal();
+    
     // Print column header
     cout << "   ";
     for (char col = 'A'; col < 'A' + BOARD_SIZE; ++col) {
