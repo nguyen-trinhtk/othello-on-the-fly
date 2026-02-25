@@ -13,7 +13,8 @@ void Board::clear_terminal() {
 }
 
 int Board::print_board() {
-    clear_terminal();
+    // clear_terminal();
+    
     // Print column header
     cout << "   ";
     for (char col = 'A'; col < 'A' + BOARD_SIZE; ++col) {
@@ -33,6 +34,25 @@ int Board::print_board() {
     cout << LN_BRK;
     // cout << DEBUG << MSG_PRINTED_BOARD << endl;
     return OK;
+}
+
+void Board::sum_game_stats()
+{
+    int black_count = get_black_count();
+    int white_count = get_white_count();
+    cout << "Final Score: Black = " << black_count << ", White = " << white_count << endl;
+    if (black_count > white_count)
+    {
+        cout << "Black wins!" << endl;
+    }
+    else if (white_count > black_count)
+    {
+        cout << "White wins!" << endl;
+    }
+    else
+    {
+        cout << "It's a draw!" << endl;
+    }
 }
 
 Board::~Board() {

@@ -4,7 +4,7 @@ CXXFLAGS := -Wall -Iinclude -std=c++11 -pg -O2
 SRC_DIR := src
 INC_DIR := include
 BIN_DIR := bin
-SRC := $(wildcard $(SRC_DIR)/*.cpp)
+SRC := $(shell find $(SRC_DIR) -name '*.cpp')
 TARGET := $(BIN_DIR)/othello
 
 $(TARGET): $(SRC)
