@@ -1,0 +1,21 @@
+name: C++ CI
+
+on: [push, pull_request]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y cmake g++ ninja-build
+      - name: Configure
+        run: cmake -S . -B build -G Ninja
+      - name: Build
+        run: cmake --build build
+      - name: Run board tests
+        run: ./build/test/board/test_board
+      - name: Run move logic tests
+        run: ./build/test/board/test_move
+      - name: Run engine tests
+        run: ./build/test/engine/test_alphabeta
