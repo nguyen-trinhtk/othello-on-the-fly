@@ -1,11 +1,12 @@
+# Othello On The Fly
 
-# Othello-on-the-fly
+> Check out [Othello Rules](docs/rules.md) for the official game rules.
 
 Welcome to `othello-on-the-fly`! This is a simple, fast, and fun command-line version of Othello (Reversi) written in C++. Play against a friend, challenge the AI, or watch two AIs battle it out.
 
 **Fun fact:** The name comes from its origin—I started developing this game while on a plane, coding on the fly! Now, it's actively updated and improved on the ground.
 
-> 🚧 **Current status:** Fully playable, but the AI still needs rigorous optimization and testing. Please be gentle with the game!
+> 🚧 **Current status:** Fully playable and tested, but the AI still needs rigorous optimization. Please be gentle with the game!
 
 ## Quick Start
 

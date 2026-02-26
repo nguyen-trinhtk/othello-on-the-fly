@@ -1,67 +1,33 @@
-### Game logic
-#### Individual game
-Pseudocode for start_game
-```
-create and set up the board
-while (there are still legal moves for at least one) {
-    check for all valid moves on the board and store it
-    if there's no moves left for this player {
-        continue
-    }
-    keep parsing user's move from stdin & checking if it's in valid moves
-    process the move: flipping
-    print the current board (later: modify only no print)
-    alternate player
-}
-summarize stats
-destroy the board
-```
-#### Game loop
-Pseudocode for main
-```
-score for p1, p2
-while (playing) {
-    start game
-    update score
-}
-print final scores
-```
+# Othello (Reversi) Rules
 
-#### Get all valid moves
-Pseudocode for is_valid_move()
-```
-direction_x // can make it a macro
-direction_y
+## Objective
+Othello is a strategy board game for two players (Black and White). The goal is to have the majority of discs of your color on the board at the end of the game.
 
-if (is occupied) {
-    return FALSE
-}
+## Game Setup
+- The game is played on an 8x8 board.
+- Each player chooses a color: Black or White.
+- The board starts with four discs in the center: two black and two white, arranged with same colors on a diagonal.
 
-for each direction {
-    if (neighbor in that direction is op's disc) {
-        for (each disc in that path) {
-            if (is player's disc) {
-                return TRUE
-            }
-        }
-    }
-}
-return FALSE
-```
-Pseudocode for get_valid_moves()
-```
-valid_moves
-for each square in the board {
-    if (is_valid_move(square, player)) {
-        append to valid_moves
-    }
-}
-return valid_moves
-```
+## Gameplay
+1. **Turns**: Black moves first. Players alternate turns.
+2. **Making a Move**:
+	- On your turn, place a disc of your color on an empty square.
+	- The placed disc must outflank one or more of the opponent's discs in a straight line (horizontal, vertical, or diagonal).
+	- To outflank means to bracket one or more opponent discs between the disc you placed and another disc of your color already on the board.
+	- All outflanked discs are flipped to your color.
+3. **Valid Moves**:
+	- If a player has at least one valid move, they must play.
+	- If no valid moves are available, the player passes their turn.
+	- If neither player can move, the game ends.
 
+## End of Game
+- The game ends when neither player can make a move (usually when the board is full).
+- The player with the most discs of their color on the board wins.
+- If both players have the same number of discs, the game is a draw.
 
-### Move format
-- Spaces are accepted 
-- Other than spaces, only 2 char:
-    + A-H any cases: Column
-    + 1-8: Row
+## Additional Notes
+- Discs are only flipped as a direct result of a move; you cannot flip discs by passing.
+- It is possible for a player to have no valid moves and pass multiple times in a row.
+- The game encourages strategic play, including controlling corners and edges.
+
+For more details, see the [official Othello rules](https://www.worldothello.org/about/about-othello/othello-rules/official-rules/english).
