@@ -30,6 +30,10 @@ private:
     bool current_turn;
     unordered_set<std::pair<int, int>, pair_hash> valid_moves; // Faster lookup
 
+// Public methods
+public:
+    Board();
+
     // Board operations
     inline int get_square(int r, int c)
     {
@@ -81,14 +85,6 @@ private:
         }
         return OK;
     }
-    void clear_terminal();
-
-    // Game logic
-    bool is_valid_move(int r, int c, bool player);
-
-// Public methods
-public:
-    Board();
 
     // Evaluate the board: positive if more discs for 'player', negative if fewer
     inline int evaluate(bool player) const
@@ -140,6 +136,7 @@ public:
     }
 
     int compute_valid_moves();
+    bool is_valid_move(int r, int c, bool player);
     int process_move(int r, int c, bool player);
     int print_board();
     pair<int, int> parse_move(); // Loop for user to enter move
