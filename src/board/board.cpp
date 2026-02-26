@@ -7,14 +7,7 @@ Board::Board() {
     cout << MSG_CREATED_BOARD << endl;
 }
 
-void Board::clear_terminal() {
-    // ANSI escape code to clear screen and move cursor to top-left
-    std::cout << "\033[2J\033[H";
-}
-
 int Board::print_board() {
-    // clear_terminal();
-    
     // Print column header
     cout << "   ";
     for (char col = 'A'; col < 'A' + BOARD_SIZE; ++col) {
