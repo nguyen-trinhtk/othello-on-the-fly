@@ -10,6 +10,7 @@ add_subdirectory(src/engine)
 add_subdirectory(src/game)
 
 add_subdirectory(test/board)
+add_subdirectory(test/engine)
 
 add_executable(othello src/game/main.cpp)
 target_link_libraries(othello board engine game)
