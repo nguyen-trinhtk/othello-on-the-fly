@@ -27,7 +27,7 @@ private:
     uint64_t white_moves;
     uint64_t black_moves;
 
-    bool current_turn;
+    int current_turn;
     unordered_set<std::pair<int, int>, pair_hash> valid_moves; // Faster lookup
 
 // Public methods
@@ -61,7 +61,7 @@ public:
             return EMPTY_SQUARE;
         else
         {
-            cout << MSG_ERR_INVALID_DISC << endl;
+            cerr << MSG_ERR_INVALID_DISC << endl;
             return INVALID_SQUARE;
         }
     }
@@ -78,16 +78,21 @@ public:
             white_moves |= (1ULL << (8 * r + c));
             black_moves &= ~(1ULL << (8 * r + c));
         }
+        else if (disc == EMPTY)
+        {
+            black_moves &= ~(1ULL << (8 * r + c));
+            white_moves &= ~(1ULL << (8 * r + c));
+        }
         else
         {
-            cout << MSG_ERR_INVALID_DISC << endl;
+            cerr << MSG_ERR_INVALID_DISC << endl;
             return ERR_INVALID_DISC;
         }
         return OK;
     }
 
     // Evaluate the board: positive if more discs for 'player', negative if fewer
-    inline int evaluate(bool player) const
+    inline int evaluate(int player) const
     {
         // Count bits for each player
         int black_count = __builtin_popcountll(black_moves);
@@ -110,7 +115,7 @@ public:
     inline bool is_game_over()
     {
         // Save current turn
-        bool original_turn = current_turn;
+        int original_turn = current_turn;
         // Check for black
         current_turn = BLACK;
         int black_moves_count = compute_valid_moves();
@@ -127,17 +132,17 @@ public:
     {
         return valid_moves;
     }
-    inline bool get_current_player() {
+    inline int get_current_player() {
         return current_turn;
     }
 
-    inline void set_current_player(bool player) {
+    inline void set_current_player(int player) {
         current_turn = player;
     }
 
     int compute_valid_moves();
-    bool is_valid_move(int r, int c, bool player);
-    int process_move(int r, int c, bool player);
+    bool is_valid_move(int r, int c, int player);
+    int process_move(int r, int c, int player);
     int print_board();
     pair<int, int> parse_move(); // Loop for user to enter move
 

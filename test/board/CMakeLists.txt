@@ -17,18 +17,21 @@ FetchContent_Declare(
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
-# Add test source
+
+# Add test sources
 add_executable(test_board test_board.cpp)
+add_executable(test_move test_move.cpp)
 
-# Link your board library and gtest
-# Adjust the path to your board sources as needed
-# target_link_libraries(test_board PRIVATE board gtest_main)
+# Link board library and gtest
 target_link_libraries(test_board PRIVATE board gtest_main)
+target_link_libraries(test_move PRIVATE board gtest_main)
 
-# If you have a board library, uncomment and adjust:
-# target_include_directories(test_board PRIVATE ../../include)
-# target_link_libraries(test_board PRIVATE board)
+# Include headers
 target_include_directories(test_board PRIVATE ../../include)
+target_include_directories(test_move PRIVATE ../../include)
+target_include_directories(test_move PRIVATE ..)
+target_include_directories(test_board PRIVATE ..)
 
-# Register the test
+# Register the tests
 add_test(NAME BoardStateTests COMMAND test_board)
+add_test(NAME MoveLogicTests COMMAND test_move)

@@ -51,6 +51,7 @@ constexpr int ERR_COLLISION = -1;
 constexpr int ERR_NO_MOVES_LEFT = -2;
 constexpr int ERR_INVALID_DISC = -3;
 constexpr int ERR_SQUARE_OCCUPIED = -4;
+constexpr int ERR_INVALID_MOVE = -5;
 
 // --- Messages ---
 constexpr char MSG_CREATED_BOARD[] = "Board successfully created";

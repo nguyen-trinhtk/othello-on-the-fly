@@ -1,14 +1,8 @@
 #include <gtest/gtest.h>
 #include "board.hpp"
-
-// Helper: fill board with a specific disc
-template <typename BoardType>
-void fill_board(BoardType &board, int disc)
-{
-    for (int r = 0; r < 8; ++r)
-        for (int c = 0; c < 8; ++c)
-            board.set_square(r, c, disc);
-}
+#include "../utils.hpp"
+// sum_game_stats: Not easily testable without capturing stdout, so omitted here.
+// Destructor: Memory leaks should be checked with valgrind or similar tool, not in unit test.
 
 // Constructor tests
 TEST(BoardState, DefaultConstruction)
@@ -137,6 +131,3 @@ TEST(BoardState, CurrentPlayerSetGet)
     b.set_current_player(WHITE);
     EXPECT_EQ(b.get_current_player(), WHITE);
 }
-
-// sum_game_stats: Not easily testable without capturing stdout, so omitted here.
-// Destructor: Memory leaks should be checked with valgrind or similar tool, not in unit test.

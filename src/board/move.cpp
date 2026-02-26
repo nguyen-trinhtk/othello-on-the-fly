@@ -21,13 +21,13 @@ pair<int, int> Board::parse_move()
         // Validate move format
         if (move_str.length() != 2 || !isalpha(move_str[0]) || !isdigit(move_str[1]))
         {
-            cout << MSG_ERR_INVALID_MOVE_FORMAT << endl;
+            cerr << MSG_ERR_INVALID_MOVE_FORMAT << endl;
             continue;
         }
         // Check if first character is a letter and second is a digit
         if ((move_str[0] < 'A' || move_str[0] > 'H') || (move_str[1] < '1' || move_str[1] > '8'))
         {
-            cout << MSG_ERR_OUT_OF_BOUNDS << endl;
+            cerr << MSG_ERR_OUT_OF_BOUNDS << endl;
             continue;
         }
 
@@ -40,11 +40,11 @@ pair<int, int> Board::parse_move()
         {
             if (get_square(row, col) != EMPTY)
             {
-                cout << MSG_ERR_SQUARE_OCCUPIED << endl;
+                cerr << MSG_ERR_SQUARE_OCCUPIED << endl;
             }
             else
             {
-                cout << MSG_ERR_INVALID_MOVE << endl;
+                cerr << MSG_ERR_INVALID_MOVE << endl;
             }
             continue;
         }
@@ -54,8 +54,12 @@ pair<int, int> Board::parse_move()
     return make_pair(row, col);
 }
 
-bool Board::is_valid_move(int r, int c, bool player)
+bool Board::is_valid_move(int r, int c, int player)
 {
+    if (r < 0 || r >= 8 || c < 0 || c >= 8)
+        return false;
+    if (player != BLACK && player != WHITE) 
+        return false;
     return valid_moves.find(std::make_pair(r, c)) != valid_moves.end();
 }
 
@@ -104,8 +108,9 @@ int Board::compute_valid_moves()
     return valid_moves.size();
 }
 
-int Board::process_move(int r, int c, bool player)
+int Board::process_move(int r, int c, int player)
 {
+    if (!is_valid_move(r, c, player)) return ERR_INVALID_MOVE;
     uint64_t move_bit = 1ULL << (8 * r + c);
     uint64_t player_bits = player == BLACK ? black_moves : white_moves;
     uint64_t opp_bits = player == BLACK ? white_moves : black_moves;
