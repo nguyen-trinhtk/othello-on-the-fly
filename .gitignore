@@ -7,3 +7,17 @@ bin/*
 
 # Individual files
 gmon.out
+
+# Build directory
+build/
+
+# Executables
+othello
+
+# OS-specific files
+.DS_Store
+
+# Editor/IDE files
+*.swp
+*.swo
+*.vscode/
