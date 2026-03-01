@@ -1,11 +1,11 @@
 #include <gtest/gtest.h>
-#include "board.hpp"
-#include "alphabeta.hpp"
+#include "board/board.hpp"
+#include "engine/alphabeta.hpp"
 #include "../utils.hpp"
 
 TEST(AlphaBetaTest, StandardOpeningBoard)
 {
-    Board board;
+    othello::board::Board board;
     std::vector<std::vector<int>> state = {
         {EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY},
         {EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY},
@@ -16,13 +16,13 @@ TEST(AlphaBetaTest, StandardOpeningBoard)
         {EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY},
         {EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY}};
     set_board_state(board, state, BLACK);
-    int eval = alphabeta(board, 1, -1000000, 1000000, true);
+    int eval = othello::engine::alphabeta(board, 1, -1000000, 1000000, true);
     EXPECT_EQ(eval, -3); // matches actual eval output
 }
 
 TEST(AlphaBetaTest, NoLegalMovesForMaximizingPlayer)
 {
-    Board board;
+    othello::board::Board board;
     std::vector<std::vector<int>> state = {
         {WHITE, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE},
         {WHITE, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE},
@@ -33,22 +33,22 @@ TEST(AlphaBetaTest, NoLegalMovesForMaximizingPlayer)
         {WHITE, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE},
         {EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY}};
     set_board_state(board, state, BLACK);
-    int eval = alphabeta(board, 2, -1000000, 1000000, true);
+    int eval = othello::engine::alphabeta(board, 2, -1000000, 1000000, true);
     EXPECT_EQ(eval, -56);
 }
 
 TEST(AlphaBetaTest, TerminalState)
 {
-    Board board;
+    othello::board::Board board;
     std::vector<std::vector<int>> state(8, std::vector<int>(8, BLACK)); // All Black
     set_board_state(board, state, BLACK);
-    int eval = alphabeta(board, 3, -1000000, 1000000, true);
+    int eval = othello::engine::alphabeta(board, 3, -1000000, 1000000, true);
     EXPECT_EQ(eval, 64);
 }
 
 TEST(AlphaBetaTest, AlphaCutoff)
 {
-    Board board;
+    othello::board::Board board;
     std::vector<std::vector<int>> state = {
         {BLACK, BLACK, BLACK, BLACK, BLACK, BLACK, BLACK, BLACK},
         {BLACK, BLACK, BLACK, BLACK, BLACK, BLACK, BLACK, BLACK},
@@ -59,13 +59,13 @@ TEST(AlphaBetaTest, AlphaCutoff)
         {WHITE, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE},
         {WHITE, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE}};
     set_board_state(board, state, BLACK);
-    int eval = alphabeta(board, 3, -1000000, 1000000, true);
+    int eval = othello::engine::alphabeta(board, 3, -1000000, 1000000, true);
     EXPECT_EQ(eval, -2);
 }
 
 TEST(AlphaBetaTest, BetaCutoff)
 {
-    Board board;
+    othello::board::Board board;
     std::vector<std::vector<int>> state = {
         {WHITE, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE},
         {WHITE, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE},
@@ -76,13 +76,13 @@ TEST(AlphaBetaTest, BetaCutoff)
         {BLACK, BLACK, BLACK, BLACK, BLACK, BLACK, BLACK, BLACK},
         {BLACK, BLACK, BLACK, BLACK, BLACK, BLACK, BLACK, BLACK}};
     set_board_state(board, state, WHITE);
-    int eval = alphabeta(board, 3, -1000000, 1000000, false);
+    int eval = othello::engine::alphabeta(board, 3, -1000000, 1000000, false);
     EXPECT_EQ(eval, -2);
 }
 
 TEST(AlphaBetaTest, MaximizingVsMinimizing)
 {
-    Board board;
+    othello::board::Board board;
     std::vector<std::vector<int>> state = {
         {EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY},
         {EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY},
@@ -93,13 +93,13 @@ TEST(AlphaBetaTest, MaximizingVsMinimizing)
         {EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY},
         {EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY}};
     set_board_state(board, state, BLACK);
-    int eval = alphabeta(board, 2, -1000000, 1000000, true);
+    int eval = othello::engine::alphabeta(board, 2, -1000000, 1000000, true);
     EXPECT_EQ(eval, 2);
 }
 
 TEST(AlphaBetaTest, DeepSearch)
 {
-    Board board;
+    othello::board::Board board;
     std::vector<std::vector<int>> state = {
         {EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY},
         {EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY},
@@ -110,6 +110,6 @@ TEST(AlphaBetaTest, DeepSearch)
         {EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY},
         {EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY}};
     set_board_state(board, state, BLACK);
-    int eval = alphabeta(board, 5, -1000000, 1000000, true);
+    int eval = othello::engine::alphabeta(board, 5, -1000000, 1000000, true);
     EXPECT_EQ(eval, -7);
 }

@@ -1,5 +1,6 @@
-- new branch for `tests`: CMake & gtest: get valid moves, process moves, board, engine
-- Cache: compute valid moves, transposition table
+- Cache: 
++ compute valid moves
++ transposition table
 - Paralellization
 - Performance benchmarking
 

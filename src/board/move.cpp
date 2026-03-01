@@ -1,5 +1,7 @@
-#include "board.hpp"
+#include "board/board.hpp"
 
+namespace othello {
+namespace board {
 pair<int, int> Board::parse_move()
 {
     // Loop for user to enter move
@@ -58,7 +60,7 @@ bool Board::is_valid_move(int r, int c, int player)
 {
     if (r < 0 || r >= 8 || c < 0 || c >= 8)
         return false;
-    if (player != BLACK && player != WHITE) 
+    if (player != BLACK && player != WHITE)
         return false;
     return valid_moves.find(std::make_pair(r, c)) != valid_moves.end();
 }
@@ -110,7 +112,8 @@ int Board::compute_valid_moves()
 
 int Board::process_move(int r, int c, int player)
 {
-    if (!is_valid_move(r, c, player)) return ERR_INVALID_MOVE;
+    if (!is_valid_move(r, c, player))
+        return ERR_INVALID_MOVE;
     uint64_t move_bit = 1ULL << (8 * r + c);
     uint64_t player_bits = player == BLACK ? black_moves : white_moves;
     uint64_t opp_bits = player == BLACK ? white_moves : black_moves;
@@ -156,4 +159,6 @@ int Board::process_move(int r, int c, int player)
         black_moves &= ~to_flip;
     }
     return OK;
+}
+}
 }

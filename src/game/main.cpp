@@ -1,5 +1,5 @@
 #include <iostream>
-#include "game.hpp"
+#include "game/game.hpp"
 
 void print_help()
 {
@@ -13,6 +13,7 @@ void print_help()
 
 int main(int argc, char *argv[])
 {
+    othello::board::Board::init_zobrist();
     Game game;
     if (argc == 1)
     {

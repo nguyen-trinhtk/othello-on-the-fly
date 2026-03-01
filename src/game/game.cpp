@@ -1,12 +1,12 @@
-#include "game.hpp"
-#include "board.hpp"
-#include "alphabeta.hpp"
+#include "game/game.hpp"
+#include "board/board.hpp"
+#include "engine/alphabeta.hpp"
 
 Game::Game() {}
 
 void Game::play_pvp()
 {
-    Board board;
+    othello::board::Board board;
     std::cout << MSG_STARTING_GAME << std::endl;
     bool game_over = false;
     while (!game_over)
@@ -35,7 +35,7 @@ void Game::play_pvp()
 
 void Game::autoplay()
 {
-    Board board;
+    othello::board::Board board;
     std::cout << "[DEBUG] Starting autoplay..." << std::endl;
     bool game_over = false;
     while (!game_over)
@@ -65,7 +65,7 @@ void Game::autoplay()
 
 void Game::play_pve()
 {
-    Board board;
+    othello::board::Board board;
     std::cout << MSG_STARTING_GAME << std::endl;
     bool game_over = false;
     bool human_is_black = true;
@@ -102,9 +102,9 @@ void Game::play_pve()
             std::pair<int, int> best_move;
             for (auto move : board.get_valid_moves())
             {
-                Board child = board;
+                othello::board::Board child = board;
                 child.process_move(move.first, move.second, board.get_current_player());
-                int score = alphabeta(child, ALPHABETA_DEPTH, ALPHABETA_MIN, ALPHABETA_MAX, !board.get_current_player());
+                int score = othello::engine::alphabeta(child, ALPHABETA_DEPTH, ALPHABETA_MIN, ALPHABETA_MAX, !board.get_current_player());
                 if (score > best_score || best_score == ALPHABETA_MIN)
                 {
                     best_score = score;

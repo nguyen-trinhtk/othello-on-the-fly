@@ -11,7 +11,7 @@ void fill_board(BoardType &board, int disc)
 
 // Helper: set up board with arbitrary state and player
 #include <vector>
-inline void set_board_state(Board &board, const std::vector<std::vector<int>> &state, int player)
+inline void set_board_state(othello::board::Board &board, const std::vector<std::vector<int>> &state, int player)
 {
     // Clear the board first to avoid leftover discs from default setup
     fill_board(board, EMPTY);

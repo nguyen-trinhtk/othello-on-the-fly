@@ -1,1 +1,1 @@
-add_library(board board.cpp move.cpp)
+add_library(board board.cpp move.cpp hash.cpp)

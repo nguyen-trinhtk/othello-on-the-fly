@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include "board.hpp"
+#include "board/board.hpp"
 #include "../utils.hpp"
 // sum_game_stats: Not easily testable without capturing stdout, so omitted here.
 // Destructor: Memory leaks should be checked with valgrind or similar tool, not in unit test.
@@ -7,7 +7,7 @@
 // Constructor tests
 TEST(BoardState, DefaultConstruction)
 {
-    Board b;
+    othello::board::Board b;
     // Board is 8x8, center 4 discs correct
     EXPECT_EQ(b.get_square(3, 3), WHITE);
     EXPECT_EQ(b.get_square(3, 4), BLACK);
@@ -24,7 +24,7 @@ TEST(BoardState, DefaultConstruction)
 
 TEST(BoardState, MultipleBoardsIndependent)
 {
-    Board b1, b2;
+    othello::board::Board b1, b2;
     b1.set_square(2, 2, BLACK);
     b2.set_square(5, 5, WHITE);
     EXPECT_EQ(b1.get_square(2, 2), BLACK);
@@ -34,7 +34,8 @@ TEST(BoardState, MultipleBoardsIndependent)
 // get_square tests
 TEST(BoardState, GetSquareValid)
 {
-    Board b;
+
+    othello::board::Board b;
     EXPECT_EQ(b.get_square(3, 3), WHITE);
     EXPECT_EQ(b.get_square(0, 0), EMPTY);
     EXPECT_EQ(b.get_square(7, 7), EMPTY);
@@ -43,7 +44,8 @@ TEST(BoardState, GetSquareValid)
 // set_square tests
 TEST(BoardState, SetSquareBlackWhite)
 {
-    Board b;
+
+    othello::board::Board b;
     b.set_square(2, 2, BLACK);
     EXPECT_EQ(b.get_square(2, 2), BLACK);
     b.set_square(5, 5, WHITE);
@@ -52,7 +54,8 @@ TEST(BoardState, SetSquareBlackWhite)
 
 TEST(BoardState, SetSquareOverwrite)
 {
-    Board b;
+
+    othello::board::Board b;
     b.set_square(2, 2, BLACK);
     b.set_square(2, 2, WHITE);
     EXPECT_EQ(b.get_square(2, 2), WHITE);
@@ -61,7 +64,8 @@ TEST(BoardState, SetSquareOverwrite)
 // print_square tests
 TEST(BoardState, PrintSquareSymbols)
 {
-    Board b;
+
+    othello::board::Board b;
     EXPECT_EQ(b.print_square(BLACK), std::string(BLACK_DISC));
     EXPECT_EQ(b.print_square(WHITE), std::string(WHITE_DISC));
     EXPECT_EQ(b.print_square(EMPTY), std::string(EMPTY_SQUARE));
@@ -70,14 +74,16 @@ TEST(BoardState, PrintSquareSymbols)
 // get_black_count, get_white_count tests
 TEST(BoardState, DiscCountsInitial)
 {
-    Board b;
+
+    othello::board::Board b;
     EXPECT_EQ(b.get_black_count(), 2);
     EXPECT_EQ(b.get_white_count(), 2);
 }
 
 TEST(BoardState, DiscCountsAfterMoves)
 {
-    Board b;
+
+    othello::board::Board b;
     b.set_square(0, 0, BLACK);
     b.set_square(1, 1, WHITE);
     EXPECT_EQ(b.get_black_count(), 3);
@@ -86,7 +92,8 @@ TEST(BoardState, DiscCountsAfterMoves)
 
 TEST(BoardState, DiscCountsFullBoard)
 {
-    Board b;
+
+    othello::board::Board b;
     fill_board(b, BLACK);
     EXPECT_EQ(b.get_black_count(), 64);
     EXPECT_EQ(b.get_white_count(), 0);
@@ -95,14 +102,16 @@ TEST(BoardState, DiscCountsFullBoard)
 // evaluate tests
 TEST(BoardState, EvaluateInitial)
 {
-    Board b;
+
+    othello::board::Board b;
     EXPECT_EQ(b.evaluate(BLACK), 0);
     EXPECT_EQ(b.evaluate(WHITE), 0);
 }
 
 TEST(BoardState, EvaluateMoreBlack)
 {
-    Board b;
+
+    othello::board::Board b;
     fill_board(b, BLACK);
     EXPECT_GT(b.evaluate(BLACK), 0);
     EXPECT_LT(b.evaluate(WHITE), 0);
@@ -111,13 +120,13 @@ TEST(BoardState, EvaluateMoreBlack)
 // is_game_over tests
 TEST(BoardState, GameNotOverInitial)
 {
-    Board b;
+    othello::board::Board b;
     EXPECT_FALSE(b.is_game_over());
 }
 
 TEST(BoardState, GameOverFullBoard)
 {
-    Board b;
+    othello::board::Board b;
     fill_board(b, BLACK);
     EXPECT_TRUE(b.is_game_over());
 }
@@ -125,7 +134,8 @@ TEST(BoardState, GameOverFullBoard)
 // get_current_player/set_current_player tests
 TEST(BoardState, CurrentPlayerSetGet)
 {
-    Board b;
+
+    othello::board::Board b;
     b.set_current_player(BLACK);
     EXPECT_EQ(b.get_current_player(), BLACK);
     b.set_current_player(WHITE);

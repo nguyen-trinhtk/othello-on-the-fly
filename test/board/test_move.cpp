@@ -1,18 +1,18 @@
 #include <gtest/gtest.h>
-#include "board.hpp"
+#include "board/board.hpp"
 #include "../utils.hpp"
 
 // --- is_valid_move tests ---
 TEST(MoveLogic, ValidMoveBlack)
 {
-    Board b;
+    othello::board::Board b;
     b.set_current_player(BLACK);
     b.compute_valid_moves();
     EXPECT_TRUE(b.is_valid_move(2, 3, BLACK));
 }
 TEST(MoveLogic, ValidMoveWhite)
 {
-    Board b;
+    othello::board::Board b;
     b.set_current_player(BLACK);
     b.compute_valid_moves();
     b.process_move(2, 3, BLACK);
@@ -22,7 +22,7 @@ TEST(MoveLogic, ValidMoveWhite)
 }
 TEST(MoveLogic, OccupiedSquare)
 {
-    Board b;
+    othello::board::Board b;
     b.set_square(2, 3, BLACK);
     b.set_current_player(BLACK);
     b.compute_valid_moves();
@@ -30,14 +30,14 @@ TEST(MoveLogic, OccupiedSquare)
 }
 TEST(MoveLogic, NoFlips)
 {
-    Board b;
+    othello::board::Board b;
     b.set_current_player(BLACK);
     b.compute_valid_moves();
     EXPECT_FALSE(b.is_valid_move(0, 0, BLACK));
 }
 TEST(MoveLogic, OutOfBounds)
 {
-    Board b;
+    othello::board::Board b;
     b.set_current_player(BLACK);
     b.compute_valid_moves();
     EXPECT_FALSE(b.is_valid_move(-1, 0, BLACK));
@@ -45,7 +45,7 @@ TEST(MoveLogic, OutOfBounds)
 }
 TEST(MoveLogic, InvalidPlayerValue)
 {
-    Board b;
+    othello::board::Board b;
     b.set_current_player(BLACK);
     b.compute_valid_moves();
     EXPECT_FALSE(b.is_valid_move(2, 3, 2)); // 2 is not BLACK or WHITE
@@ -54,7 +54,7 @@ TEST(MoveLogic, InvalidPlayerValue)
 // --- process_move tests ---
 TEST(MoveLogic, ProcessValidMove)
 {
-    Board b;
+    othello::board::Board b;
     b.set_current_player(BLACK);
     b.compute_valid_moves();
     int before = b.get_black_count();
@@ -63,7 +63,7 @@ TEST(MoveLogic, ProcessValidMove)
 }
 TEST(MoveLogic, ProcessInvalidMove)
 {
-    Board b;
+    othello::board::Board b;
     b.set_current_player(BLACK);
     b.compute_valid_moves();
     int before = b.get_black_count();
@@ -72,7 +72,7 @@ TEST(MoveLogic, ProcessInvalidMove)
 }
 TEST(MoveLogic, EdgeMove)
 {
-    Board b;
+    othello::board::Board b;
     std::vector<std::vector<int>> state(8, std::vector<int>(8, EMPTY));
     // Edge flip: black at (0,2), white at (0,1), empty at (0,0)
     state[0][1] = WHITE;
@@ -84,7 +84,7 @@ TEST(MoveLogic, EdgeMove)
 }
 TEST(MoveLogic, CornerMove)
 {
-    Board b;
+    othello::board::Board b;
     std::vector<std::vector<int>> state(8, std::vector<int>(8, EMPTY));
     // Diagonal flip: black at (2,2), white at (1,1), empty at (0,0)
     state[1][1] = WHITE;
@@ -96,7 +96,7 @@ TEST(MoveLogic, CornerMove)
 }
 TEST(MoveLogic, MultiDirectionFlips)
 {
-    Board b;
+    othello::board::Board b;
     std::vector<std::vector<int>> state(8, std::vector<int>(8, EMPTY));
     // Multi-direction flip: black at (3,2) and (2,3), white at (3,3), empty at (3,4)
     state[3][2] = BLACK;
@@ -109,7 +109,7 @@ TEST(MoveLogic, MultiDirectionFlips)
 }
 TEST(MoveLogic, ProcessInvalidPlayer)
 {
-    Board b;
+    othello::board::Board b;
     b.set_current_player(BLACK);
     b.compute_valid_moves();
     int before = b.get_black_count();
@@ -120,13 +120,13 @@ TEST(MoveLogic, ProcessInvalidPlayer)
 // --- compute_valid_moves tests ---
 TEST(MoveLogic, ComputeValidMovesInitial)
 {
-    Board b;
+    othello::board::Board b;
     b.set_current_player(BLACK);
     EXPECT_EQ(b.compute_valid_moves(), 4);
 }
 TEST(MoveLogic, ComputeValidMovesAfterMove)
 {
-    Board b;
+    othello::board::Board b;
     b.set_current_player(BLACK);
     b.compute_valid_moves();
     b.process_move(2, 3, BLACK);
@@ -135,7 +135,7 @@ TEST(MoveLogic, ComputeValidMovesAfterMove)
 }
 TEST(MoveLogic, ComputeValidMovesNoMoves)
 {
-    Board b;
+    othello::board::Board b;
     fill_board(b, BLACK);
     b.set_current_player(BLACK);
     EXPECT_EQ(b.compute_valid_moves(), 0);
@@ -144,14 +144,14 @@ TEST(MoveLogic, ComputeValidMovesNoMoves)
 // --- get_valid_moves tests ---
 TEST(MoveLogic, GetValidMovesMatchesCompute)
 {
-    Board b;
+    othello::board::Board b;
     b.set_current_player(BLACK);
     int n = b.compute_valid_moves();
     EXPECT_EQ(b.get_valid_moves().size(), n);
 }
 TEST(MoveLogic, GetValidMovesAfterBoardChange)
 {
-    Board b;
+    othello::board::Board b;
     b.set_current_player(BLACK);
     b.compute_valid_moves();
     b.process_move(2, 3, BLACK);
@@ -165,7 +165,7 @@ TEST(MoveLogic, GetValidMovesAfterBoardChange)
 // --- Edge & Game End Cases ---
 TEST(MoveLogic, MovesOnEdgesCorners)
 {
-    Board b;
+    othello::board::Board b;
     std::vector<std::vector<int>> state(8, std::vector<int>(8, WHITE));
     state[0][0] = EMPTY;
     state[0][7] = EMPTY;
@@ -179,7 +179,7 @@ TEST(MoveLogic, MovesOnEdgesCorners)
 }
 TEST(MoveLogic, ValidMoveAfterPass)
 {
-    Board b;
+    othello::board::Board b;
     std::vector<std::vector<int>> state(8, std::vector<int>(8, EMPTY));
     // Legal scenario: black at (0,1), white at (0,2), empty at (0,0)
     state[0][1] = BLACK;
@@ -190,7 +190,7 @@ TEST(MoveLogic, ValidMoveAfterPass)
 }
 TEST(MoveLogic, NoValidMovesForOnePlayer)
 {
-    Board b;
+    othello::board::Board b;
     std::vector<std::vector<int>> state(8, std::vector<int>(8, BLACK));
     set_board_state(b, state, WHITE);
     EXPECT_EQ(b.compute_valid_moves(), 0);
@@ -199,7 +199,7 @@ TEST(MoveLogic, NoValidMovesForOnePlayer)
 }
 TEST(MoveLogic, FullBoard)
 {
-    Board b;
+    othello::board::Board b;
     fill_board(b, BLACK);
     b.set_current_player(BLACK);
     EXPECT_EQ(b.compute_valid_moves(), 0);
@@ -208,7 +208,7 @@ TEST(MoveLogic, FullBoard)
 }
 TEST(MoveLogic, GameEndDetectionConsecutivePasses)
 {
-    Board b;
+    othello::board::Board b;
     std::vector<std::vector<int>> state(8, std::vector<int>(8, BLACK));
     set_board_state(b, state, BLACK);
     EXPECT_EQ(b.compute_valid_moves(), 0);
@@ -218,7 +218,7 @@ TEST(MoveLogic, GameEndDetectionConsecutivePasses)
 }
 TEST(MoveLogic, GameEndDetectionNotFullNoMoves)
 {
-    Board b;
+    othello::board::Board b;
     std::vector<std::vector<int>> state(8, std::vector<int>(8, EMPTY));
     // Fill board with alternating discs, no valid moves
     for (int i = 0; i < 8; ++i)
@@ -235,7 +235,7 @@ TEST(MoveLogic, GameEndDetectionNotFullNoMoves)
 }
 TEST(MoveLogic, InvalidMoveNegativeIndices)
 {
-    Board b;
+    othello::board::Board b;
     b.set_current_player(BLACK);
     b.compute_valid_moves();
     EXPECT_FALSE(b.is_valid_move(-1, 0, BLACK));
@@ -243,7 +243,7 @@ TEST(MoveLogic, InvalidMoveNegativeIndices)
 }
 TEST(MoveLogic, InvalidMoveIndicesGE8)
 {
-    Board b;
+    othello::board::Board b;
     b.set_current_player(BLACK);
     b.compute_valid_moves();
     EXPECT_FALSE(b.is_valid_move(8, 0, BLACK));
@@ -251,7 +251,7 @@ TEST(MoveLogic, InvalidMoveIndicesGE8)
 }
 TEST(MoveLogic, InvalidMoveOccupiedSquare)
 {
-    Board b;
+    othello::board::Board b;
     b.set_square(2, 3, BLACK);
     b.set_current_player(BLACK);
     b.compute_valid_moves();
