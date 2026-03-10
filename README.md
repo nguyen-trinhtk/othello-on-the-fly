@@ -1,40 +1,39 @@
-# Othello On The Fly
 
-> Check out [Othello Rules](docs/rules.md) for the official game rules.
+# Othello, on-the-fly
 
-Welcome to `othello-on-the-fly`! This is a simple, fast, and fun command-line version of Othello (Reversi) written in C++. Play against a friend, challenge the AI, or watch two AIs battle it out.
+A C++ Othello engine that supports both PvP and PvE. 
 
-**Fun fact:** The name comes from its origin—I started developing this game while on a plane, coding on the fly! Now, it's actively updated and improved on the ground.
+## Installation
 
-> 🚧 **Current status:** Fully playable and tested, but the AI still needs rigorous optimization. Please be gentle with the game!
+Build `othello-on-the-fly` with CMake:
 
-## Quick Start
-
-1. **Build the game:**
-   ```bash
-   mkdir -p build
-   cd build
-   cmake ..
-   make
-   ```
-2. **Run the game:**
-   ```bash
-   ./othello --help
-   ```
-   (Make sure you are in the `build` directory.)
-
-## Game Modes
-
-Choose how you want to play:
-
+```bash
+    mkdir -p build
+    cd build
+    cmake ..
+    make
+```
+Then run this binary in `build/`:
+```bash
+./othello
+```
+with one of the following options: 
 | Command                | Mode                |
 |------------------------|---------------------|
 | `./othello --autoplay` | AI vs AI            |
 | `./othello --pvp`      | Player vs Player    |
 | `./othello --pve`      | Player vs AI        |
 | `./othello --help`     | Show help message   |
+    
+## Optimizations
 
-Just run the command you want in your terminal!
+The engine uses a **bitboard representation**, enabling fast board updates and move generation through efficient bitwise operations.
+
+Search is optimized with **alpha–beta pruning**, while a transposition table with Zobrist hashing caches previously evaluated positions to avoid redundant calculations. Move caching is also used to reduce repeated work during search.
+
+**Upcoming Improvements:** heuristic-based move ordering and reinforcement learning to improve position evaluation.
+
+See [Implementation Details](docs/implementation.md) for more detailed design and technical explanations.
 
 ## Project Structure
 
@@ -47,8 +46,4 @@ Just run the command you want in your terminal!
 
 - CMake >= 3.10
 - C++17 compiler (e.g., g++, clang++)
-
-## Documentation
-
-See [Implementation Details](docs/implementation.md) for more detailed design and technical explanations.
 
