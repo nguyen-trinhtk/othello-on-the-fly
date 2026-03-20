@@ -19,7 +19,7 @@ namespace othello
                 for (auto move : board.get_valid_moves())
                 {
                     othello::board::Board child_board = board; // copy
-                    child_board.process_move(move.first, move.second, BLACK);
+                    child_board.process_move(move, BLACK);
                     int eval = alphabeta(child_board, depth - 1, alpha, beta, false);
                     max_eval = std::max(max_eval, eval);
                     alpha = std::max(alpha, eval);
@@ -34,7 +34,7 @@ namespace othello
                 for (auto move : board.get_valid_moves())
                 {
                     othello::board::Board child_board = board; // copy
-                    child_board.process_move(move.first, move.second, WHITE);
+                    child_board.process_move(move, WHITE);
                     int eval = alphabeta(child_board, depth - 1, alpha, beta, true);
                     min_eval = std::min(min_eval, eval);
                     beta = std::min(beta, eval);

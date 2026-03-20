@@ -2,6 +2,14 @@
 #include "board/board.hpp"
 #include "../utils.hpp"
 
+namespace
+{
+othello::board::Move make_move(int row, int col)
+{
+    return othello::board::Move(row, col);
+}
+}
+
 // --- is_valid_move tests ---
 TEST(MoveLogic, ValidMoveBlack)
 {
@@ -15,7 +23,8 @@ TEST(MoveLogic, ValidMoveWhite)
     othello::board::Board b;
     b.set_current_player(BLACK);
     b.compute_valid_moves();
-    b.process_move(2, 3, BLACK);
+    auto move = make_move(2, 3);
+    b.process_move(move, BLACK);
     b.set_current_player(WHITE);
     b.compute_valid_moves();
     EXPECT_TRUE(b.is_valid_move(2, 2, WHITE));
@@ -58,7 +67,8 @@ TEST(MoveLogic, ProcessValidMove)
     b.set_current_player(BLACK);
     b.compute_valid_moves();
     int before = b.get_black_count();
-    b.process_move(2, 3, BLACK);
+    auto move = make_move(2, 3);
+    b.process_move(move, BLACK);
     EXPECT_GT(b.get_black_count(), before);
 }
 TEST(MoveLogic, ProcessInvalidMove)
@@ -67,7 +77,8 @@ TEST(MoveLogic, ProcessInvalidMove)
     b.set_current_player(BLACK);
     b.compute_valid_moves();
     int before = b.get_black_count();
-    b.process_move(0, 0, BLACK);
+    auto move = make_move(0, 0);
+    b.process_move(move, BLACK);
     EXPECT_EQ(b.get_black_count(), before);
 }
 TEST(MoveLogic, EdgeMove)
@@ -79,7 +90,8 @@ TEST(MoveLogic, EdgeMove)
     state[0][2] = BLACK;
     set_board_state(b, state, BLACK);
     EXPECT_TRUE(b.is_valid_move(0, 0, BLACK));
-    b.process_move(0, 0, BLACK);
+    auto move = make_move(0, 0);
+    b.process_move(move, BLACK);
     EXPECT_EQ(b.get_black_count(), 3); // (0,0) placed, (0,1) flipped, (0,2) original
 }
 TEST(MoveLogic, CornerMove)
@@ -91,7 +103,8 @@ TEST(MoveLogic, CornerMove)
     state[2][2] = BLACK;
     set_board_state(b, state, BLACK);
     EXPECT_TRUE(b.is_valid_move(0, 0, BLACK));
-    b.process_move(0, 0, BLACK);
+    auto move = make_move(0, 0);
+    b.process_move(move, BLACK);
     EXPECT_EQ(b.get_black_count(), 3); // (0,0) placed, (1,1) flipped, (2,2) original
 }
 TEST(MoveLogic, MultiDirectionFlips)
@@ -104,7 +117,8 @@ TEST(MoveLogic, MultiDirectionFlips)
     state[3][3] = WHITE;
     set_board_state(b, state, BLACK);
     EXPECT_TRUE(b.is_valid_move(3, 4, BLACK));
-    b.process_move(3, 4, BLACK);
+    auto move = make_move(3, 4);
+    b.process_move(move, BLACK);
     EXPECT_EQ(b.get_black_count(), 4); // (3,2), (2,3), (3,4) placed, (3,3) flipped
 }
 TEST(MoveLogic, ProcessInvalidPlayer)
@@ -113,7 +127,8 @@ TEST(MoveLogic, ProcessInvalidPlayer)
     b.set_current_player(BLACK);
     b.compute_valid_moves();
     int before = b.get_black_count();
-    b.process_move(2, 3, 2); // 2 is not BLACK or WHITE
+    auto move = make_move(2, 3);
+    b.process_move(move, 2); // 2 is not BLACK or WHITE
     EXPECT_EQ(b.get_black_count(), before);
 }
 
@@ -129,7 +144,8 @@ TEST(MoveLogic, ComputeValidMovesAfterMove)
     othello::board::Board b;
     b.set_current_player(BLACK);
     b.compute_valid_moves();
-    b.process_move(2, 3, BLACK);
+    auto move = make_move(2, 3);
+    b.process_move(move, BLACK);
     b.set_current_player(WHITE);
     EXPECT_GT(b.compute_valid_moves(), 0);
 }
@@ -154,7 +170,8 @@ TEST(MoveLogic, GetValidMovesAfterBoardChange)
     othello::board::Board b;
     b.set_current_player(BLACK);
     b.compute_valid_moves();
-    b.process_move(2, 3, BLACK);
+    auto move = make_move(2, 3);
+    b.process_move(move, BLACK);
     b.set_current_player(WHITE);
     b.compute_valid_moves();
     EXPECT_EQ(b.get_valid_moves().size(), b.compute_valid_moves());
@@ -239,7 +256,8 @@ TEST(MoveLogic, InvalidMoveNegativeIndices)
     b.set_current_player(BLACK);
     b.compute_valid_moves();
     EXPECT_FALSE(b.is_valid_move(-1, 0, BLACK));
-    EXPECT_EQ(b.process_move(-1, 0, BLACK), ERR_INVALID_MOVE);
+    auto move = make_move(-1, 0);
+    EXPECT_EQ(b.process_move(move, BLACK), ERR_INVALID_MOVE);
 }
 TEST(MoveLogic, InvalidMoveIndicesGE8)
 {
@@ -247,7 +265,8 @@ TEST(MoveLogic, InvalidMoveIndicesGE8)
     b.set_current_player(BLACK);
     b.compute_valid_moves();
     EXPECT_FALSE(b.is_valid_move(8, 0, BLACK));
-    EXPECT_EQ(b.process_move(0, 8, BLACK), ERR_INVALID_MOVE);
+    auto move = make_move(0, 8);
+    EXPECT_EQ(b.process_move(move, BLACK), ERR_INVALID_MOVE);
 }
 TEST(MoveLogic, InvalidMoveOccupiedSquare)
 {
@@ -256,5 +275,6 @@ TEST(MoveLogic, InvalidMoveOccupiedSquare)
     b.set_current_player(BLACK);
     b.compute_valid_moves();
     EXPECT_FALSE(b.is_valid_move(2, 3, BLACK));
-    EXPECT_EQ(b.process_move(2, 3, BLACK), ERR_INVALID_MOVE);
+    auto move = make_move(2, 3);
+    EXPECT_EQ(b.process_move(move, BLACK), ERR_INVALID_MOVE);
 }

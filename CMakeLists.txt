@@ -3,6 +3,9 @@ project(othello-on-the-fly)
 
 set(CMAKE_CXX_STANDARD 17)
 
+include(CTest)
+enable_testing()
+
 include_directories(include)
 
 add_subdirectory(src/board)

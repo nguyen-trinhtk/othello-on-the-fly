@@ -10,9 +10,7 @@ gmon.out
 
 # Build directory
 build/
-
-# Executables
-othello
+Testing/
 
 # OS-specific files
 .DS_Store

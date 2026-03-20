@@ -25,8 +25,8 @@ void Game::play_pvp()
                 continue;
             }
         }
-        std::pair<int, int> move = board.parse_move();
-        board.process_move(move.first, move.second, board.get_current_player());
+        othello::board::Move move = board.parse_move();
+        board.process_move(move, board.get_current_player());
         board.set_current_player(!board.get_current_player());
     }
     board.print_board();
@@ -54,9 +54,9 @@ void Game::autoplay()
                 continue;
             }
         }
-        std::pair<int, int> move = *board.get_valid_moves().begin();
-        std::cout << ((board.get_current_player() == BLACK) ? "Black" : "White") << " plays: " << char('A' + move.second) << (move.first + 1) << std::endl;
-        board.process_move(move.first, move.second, board.get_current_player());
+        othello::board::Move move = *board.get_valid_moves().begin();
+        std::cout << ((board.get_current_player() == BLACK) ? "Black" : "White") << " plays: " << char('A' + move.col) << (move.row + 1) << std::endl;
+        board.process_move(move, board.get_current_player());
         board.set_current_player(!board.get_current_player());
     }
     board.print_board();
@@ -92,18 +92,18 @@ void Game::play_pve()
 
         if (is_human_turn)
         {
-            std::pair<int, int> move = board.parse_move();
-            board.process_move(move.first, move.second, board.get_current_player());
+            othello::board::Move move = board.parse_move();
+            board.process_move(move, board.get_current_player());
         }
         else
         {
             // AI turn
             int best_score = ALPHABETA_MIN;
-            std::pair<int, int> best_move;
+            othello::board::Move best_move;
             for (auto move : board.get_valid_moves())
             {
                 othello::board::Board child = board;
-                child.process_move(move.first, move.second, board.get_current_player());
+                child.process_move(move, board.get_current_player());
                 int score = othello::engine::alphabeta(child, ALPHABETA_DEPTH, ALPHABETA_MIN, ALPHABETA_MAX, !board.get_current_player());
                 if (score > best_score || best_score == ALPHABETA_MIN)
                 {
@@ -111,8 +111,8 @@ void Game::play_pve()
                     best_move = move;
                 }
             }
-            board.process_move(best_move.first, best_move.second, board.get_current_player());
-            std::cout << "AI played: " << char('A' + best_move.second) << (best_move.first + 1) << std::endl;
+            board.process_move(best_move, board.get_current_player());
+            std::cout << "AI played: " << char('A' + best_move.col) << (best_move.row + 1) << std::endl;
         }
         board.set_current_player(!board.get_current_player());
     }

@@ -1,4 +1,3 @@
-
 #ifndef BOARD_H
 #define BOARD_H
 
@@ -8,6 +7,7 @@
 #include <vector>
 #include <cstdlib>
 #include <algorithm>
+#include <unordered_map>
 #include <unordered_set>
 
 #include "constants.hpp"
@@ -19,12 +19,27 @@ namespace othello
     namespace board
     {
 
-        // Hash function for pair<int, int>
-        struct pair_hash
+        struct Move
         {
-            size_t operator()(const pair<int, int> &p) const
+            int row;
+            int col;
+            std::vector<std::pair<int, int>> flipped_discs;
+
+            Move() : row(-1), col(-1) {}
+            Move(int r, int c) : row(r), col(c) {}
+
+            bool operator==(const Move &other) const
             {
-                return hash<int>()(p.first) ^ (hash<int>()(p.second) << 1);
+                return row == other.row && col == other.col;
+            }
+        };
+
+        // Hash function for Move
+        struct MoveHash
+        {
+            size_t operator()(const Move &m) const
+            {
+                return hash<int>()(m.row) ^ (hash<int>()(m.col) << 1);
             }
         };
 
@@ -35,11 +50,13 @@ namespace othello
             uint64_t black_moves;
 
             int current_turn;
-            unordered_set<std::pair<int, int>, pair_hash> valid_moves; // Faster lookup
+            unordered_set<Move, MoveHash> valid_moves; // Faster lookup
+
+            // Move generation cache: board hash -> vector of moves
+            unordered_map<uint64_t, vector<Move>> move_gen_cache;
 
             // Zobrist table for hashing
             static uint64_t zobrist_table[8][8][2]; // 8x8 board, 2 players
-
         public:
             Board();
 
@@ -137,7 +154,7 @@ namespace othello
             }
 
             // Getter for valid_moves
-            inline const unordered_set<std::pair<int, int>, pair_hash> &get_valid_moves() const
+            inline const unordered_set<Move, MoveHash> &get_valid_moves() const
             {
                 return valid_moves;
             }
@@ -153,10 +170,10 @@ namespace othello
 
             int compute_valid_moves();
             bool is_valid_move(int r, int c, int player);
-            int process_move(int r, int c, int player);
+            int process_move(Move &move, int player);
             int print_board();
-            pair<int, int> parse_move(); // Loop for user to enter move
-
+            Move parse_move(); // Loop for user to enter move
+            vector<Move> get_moves_for_current_state();
             // Game end
             void sum_game_stats();
             ~Board();
