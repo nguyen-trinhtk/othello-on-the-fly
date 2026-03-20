@@ -1,87 +1,118 @@
 #include "game/game.hpp"
+
+#include <algorithm>
+#include <iostream>
+
 #include "board/board.hpp"
 #include "engine/alphabeta.hpp"
+#include "game/console_ui.hpp"
+
+namespace
+{
+[[nodiscard]] std::string player_name(Disc player)
+{
+    return player == BLACK ? "Black" : "White";
+}
+} // namespace
 
 Game::Game() {}
 
 void Game::play_pvp()
 {
     othello::board::Board board;
-    std::cout << MSG_STARTING_GAME << std::endl;
+    othello::game_ui::ConsoleUi ui(std::cin, std::cout, std::cerr);
+
+    ui.show_message(MSG_STARTING_GAME);
+    ui.show_help();
     bool game_over = false;
     while (!game_over)
     {
-        board.print_board();
-        int valid_moves_count = board.compute_valid_moves();
+        const int valid_moves_count = board.compute_valid_moves();
+        ui.show_board(board);
         if (valid_moves_count == 0)
         {
-            std::cout << "No valid moves for " << ((board.get_current_player() == BLACK) ? "Black" : "White") << ". Skipping turn." << std::endl;
-            board.set_current_player(!board.get_current_player());
-            valid_moves_count = board.compute_valid_moves();
-            if (valid_moves_count == 0)
+            ui.show_message("No valid moves for " + player_name(board.get_current_player()) + ". Skipping turn.");
+            board.set_current_player(opponent(board.get_current_player()));
+            const int next_valid_moves = board.compute_valid_moves();
+            ui.show_board(board);
+            if (next_valid_moves == 0)
             {
-                std::cout << "No valid moves for both players. Game over." << std::endl;
+                ui.show_message("No valid moves for both players. Game over.");
                 game_over = true;
                 continue;
             }
         }
-        othello::board::Move move = board.parse_move();
-        board.process_move(move, board.get_current_player());
-        board.set_current_player(!board.get_current_player());
+        const auto move = ui.prompt_for_move(board);
+        if (!move)
+        {
+            return;
+        }
+        auto selected_move = *move;
+        board.process_move(selected_move, board.get_current_player());
+        board.set_current_player(opponent(board.get_current_player()));
     }
-    board.print_board();
-    board.sum_game_stats();
+    ui.show_board(board, false);
+    ui.show_score_summary(board);
 }
 
 void Game::autoplay()
 {
     othello::board::Board board;
-    std::cout << "[DEBUG] Starting autoplay..." << std::endl;
+    othello::game_ui::ConsoleUi ui(std::cin, std::cout, std::cerr);
+
+    ui.show_message("[DEBUG] Starting autoplay...");
     bool game_over = false;
     while (!game_over)
     {
-        board.print_board();
-        int valid_moves_count = board.compute_valid_moves();
+        const int valid_moves_count = board.compute_valid_moves();
+        ui.show_board(board);
         if (valid_moves_count == 0)
         {
-            std::cout << "No valid moves for " << ((board.get_current_player() == BLACK) ? "Black" : "White") << ". Skipping turn." << std::endl;
-            board.set_current_player(!board.get_current_player());
-            valid_moves_count = board.compute_valid_moves();
-            if (valid_moves_count == 0)
+            ui.show_message("No valid moves for " + player_name(board.get_current_player()) + ". Skipping turn.");
+            board.set_current_player(opponent(board.get_current_player()));
+            const int next_valid_moves = board.compute_valid_moves();
+            ui.show_board(board);
+            if (next_valid_moves == 0)
             {
-                std::cout << "No valid moves for both players. Game over." << std::endl;
+                ui.show_message("No valid moves for both players. Game over.");
                 game_over = true;
                 continue;
             }
         }
         othello::board::Move move = *board.get_valid_moves().begin();
-        std::cout << ((board.get_current_player() == BLACK) ? "Black" : "White") << " plays: " << char('A' + move.col) << (move.row + 1) << std::endl;
+        ui.show_message(player_name(board.get_current_player()) + " plays: " +
+                        std::string(1, static_cast<char>('A' + move.col)) +
+                        std::to_string(move.row + 1));
         board.process_move(move, board.get_current_player());
-        board.set_current_player(!board.get_current_player());
+        board.set_current_player(opponent(board.get_current_player()));
     }
-    board.print_board();
-    board.sum_game_stats();
+    ui.show_board(board, false);
+    ui.show_score_summary(board);
 }
 
 void Game::play_pve()
 {
     othello::board::Board board;
-    std::cout << MSG_STARTING_GAME << std::endl;
+    othello::game_ui::ConsoleUi ui(std::cin, std::cout, std::cerr);
+
+    ui.show_message(MSG_STARTING_GAME);
+    ui.show_help();
     bool game_over = false;
     bool human_is_black = true;
 
     while (!game_over)
     {
-        board.print_board();
-        int valid_moves_count = board.compute_valid_moves();
+        const int valid_moves_count = board.compute_valid_moves();
+        ui.show_board(board);
         if (valid_moves_count == 0)
         {
-            std::cout << "No valid moves for " << (board.get_current_player() == BLACK ? "Black" : "White") << ". Skipping turn." << std::endl;
-            board.set_current_player(!board.get_current_player());
-            valid_moves_count = board.compute_valid_moves();
-            if (valid_moves_count == 0)
+            ui.show_message("No valid moves for " + player_name(board.get_current_player()) + ". Skipping turn.");
+            board.set_current_player(opponent(board.get_current_player()));
+            const int next_valid_moves = board.compute_valid_moves();
+            ui.show_board(board);
+            if (next_valid_moves == 0)
             {
-                std::cout << "No valid moves for both players. Game over." << std::endl;
+                ui.show_message("No valid moves for both players. Game over.");
                 game_over = true;
                 continue;
             }
@@ -92,19 +123,32 @@ void Game::play_pve()
 
         if (is_human_turn)
         {
-            othello::board::Move move = board.parse_move();
-            board.process_move(move, board.get_current_player());
+            const auto move = ui.prompt_for_move(board);
+            if (!move)
+            {
+                return;
+            }
+            auto selected_move = *move;
+            board.process_move(selected_move, board.get_current_player());
         }
         else
         {
             // AI turn
             int best_score = ALPHABETA_MIN;
             othello::board::Move best_move;
-            for (auto move : board.get_valid_moves())
+            const Disc ai_player = board.get_current_player();
+            for (const auto &candidate : board.get_valid_moves())
             {
+                auto move = candidate;
                 othello::board::Board child = board;
-                child.process_move(move, board.get_current_player());
-                int score = othello::engine::alphabeta(child, ALPHABETA_DEPTH, ALPHABETA_MIN, ALPHABETA_MAX, !board.get_current_player());
+                child.process_move(move, ai_player);
+                child.set_current_player(opponent(ai_player));
+                int score = othello::engine::alphabeta(
+                    child,
+                    ALPHABETA_DEPTH - 1,
+                    ALPHABETA_MIN,
+                    ALPHABETA_MAX,
+                    ai_player);
                 if (score > best_score || best_score == ALPHABETA_MIN)
                 {
                     best_score = score;
@@ -112,10 +156,12 @@ void Game::play_pve()
                 }
             }
             board.process_move(best_move, board.get_current_player());
-            std::cout << "AI played: " << char('A' + best_move.col) << (best_move.row + 1) << std::endl;
+            ui.show_message("AI played: " +
+                            std::string(1, static_cast<char>('A' + best_move.col)) +
+                            std::to_string(best_move.row + 1));
         }
-        board.set_current_player(!board.get_current_player());
+        board.set_current_player(opponent(board.get_current_player()));
     }
-    board.print_board();
-    board.sum_game_stats();
+    ui.show_board(board, false);
+    ui.show_score_summary(board);
 }

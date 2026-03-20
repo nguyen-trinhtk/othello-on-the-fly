@@ -1,1 +1,0 @@
-/usr/bin/c++ -fprofile-instr-generate -fcoverage-mapping -O0 -Wl,-search_paths_first -Wl,-headerpad_max_install_names -fprofile-instr-generate CMakeFiles/test_alphabeta.dir/test_alphabeta.cpp.o -o test_alphabeta  ../../src/engine/libengine.a ../../src/board/libboard.a ../../lib/libgtest_main.a ../../lib/libgtest.a

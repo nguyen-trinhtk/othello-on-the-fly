@@ -13,7 +13,6 @@ void print_help()
 
 int main(int argc, char *argv[])
 {
-    othello::board::Board::init_zobrist();
     Game game;
     if (argc == 1)
     {

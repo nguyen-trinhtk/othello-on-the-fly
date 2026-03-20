@@ -8,7 +8,7 @@ namespace othello
     namespace engine
     {
 
-        int alphabeta(othello::board::Board board, int depth, int alpha, int beta, bool maximizing_player);
+        int alphabeta(othello::board::Board board, int depth, int alpha, int beta, Disc perspective_player);
 
     } // namespace engine
 } // namespace othello

@@ -1,1 +1,0 @@
-/usr/bin/c++ -fprofile-instr-generate -fcoverage-mapping -O0 -Wl,-search_paths_first -Wl,-headerpad_max_install_names -fprofile-instr-generate CMakeFiles/othello.dir/src/game/main.cpp.o -o othello  src/board/libboard.a src/engine/libengine.a src/game/libgame.a src/board/libboard.a src/engine/libengine.a

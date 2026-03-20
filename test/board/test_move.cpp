@@ -57,7 +57,7 @@ TEST(MoveLogic, InvalidPlayerValue)
     othello::board::Board b;
     b.set_current_player(BLACK);
     b.compute_valid_moves();
-    EXPECT_FALSE(b.is_valid_move(2, 3, 2)); // 2 is not BLACK or WHITE
+    EXPECT_FALSE(b.is_valid_move(2, 3, static_cast<Disc>(2)));
 }
 
 // --- process_move tests ---
@@ -84,7 +84,7 @@ TEST(MoveLogic, ProcessInvalidMove)
 TEST(MoveLogic, EdgeMove)
 {
     othello::board::Board b;
-    std::vector<std::vector<int>> state(8, std::vector<int>(8, EMPTY));
+    std::vector<std::vector<Disc>> state(8, std::vector<Disc>(8, EMPTY));
     // Edge flip: black at (0,2), white at (0,1), empty at (0,0)
     state[0][1] = WHITE;
     state[0][2] = BLACK;
@@ -97,7 +97,7 @@ TEST(MoveLogic, EdgeMove)
 TEST(MoveLogic, CornerMove)
 {
     othello::board::Board b;
-    std::vector<std::vector<int>> state(8, std::vector<int>(8, EMPTY));
+    std::vector<std::vector<Disc>> state(8, std::vector<Disc>(8, EMPTY));
     // Diagonal flip: black at (2,2), white at (1,1), empty at (0,0)
     state[1][1] = WHITE;
     state[2][2] = BLACK;
@@ -110,7 +110,7 @@ TEST(MoveLogic, CornerMove)
 TEST(MoveLogic, MultiDirectionFlips)
 {
     othello::board::Board b;
-    std::vector<std::vector<int>> state(8, std::vector<int>(8, EMPTY));
+    std::vector<std::vector<Disc>> state(8, std::vector<Disc>(8, EMPTY));
     // Multi-direction flip: black at (3,2) and (2,3), white at (3,3), empty at (3,4)
     state[3][2] = BLACK;
     state[2][3] = BLACK;
@@ -128,7 +128,7 @@ TEST(MoveLogic, ProcessInvalidPlayer)
     b.compute_valid_moves();
     int before = b.get_black_count();
     auto move = make_move(2, 3);
-    b.process_move(move, 2); // 2 is not BLACK or WHITE
+    b.process_move(move, static_cast<Disc>(2));
     EXPECT_EQ(b.get_black_count(), before);
 }
 
@@ -177,13 +177,47 @@ TEST(MoveLogic, GetValidMovesAfterBoardChange)
     EXPECT_EQ(b.get_valid_moves().size(), b.compute_valid_moves());
 }
 
+TEST(MoveLogic, GetMovesForCurrentStateDoesNotMutateBoard)
+{
+    othello::board::Board b;
+    b.set_current_player(BLACK);
+    b.compute_valid_moves();
+
+    const int black_before = b.get_black_count();
+    const int white_before = b.get_white_count();
+    const Disc player_before = b.get_current_player();
+    const auto valid_moves_before = b.get_valid_moves();
+
+    const auto generated_moves = b.get_moves_for_current_state();
+
+    EXPECT_FALSE(generated_moves.empty());
+    EXPECT_EQ(b.get_black_count(), black_before);
+    EXPECT_EQ(b.get_white_count(), white_before);
+    EXPECT_EQ(b.get_current_player(), player_before);
+    EXPECT_EQ(b.get_valid_moves(), valid_moves_before);
+}
+
+TEST(MoveLogic, IsGameOverPreservesCurrentTurnAndValidMoves)
+{
+    othello::board::Board b;
+    b.set_current_player(BLACK);
+    b.compute_valid_moves();
+
+    const Disc player_before = b.get_current_player();
+    const auto valid_moves_before = b.get_valid_moves();
+
+    EXPECT_FALSE(b.is_game_over());
+    EXPECT_EQ(b.get_current_player(), player_before);
+    EXPECT_EQ(b.get_valid_moves(), valid_moves_before);
+}
+
 // --- parse_move (not easily testable without refactor) ---
 
 // --- Edge & Game End Cases ---
 TEST(MoveLogic, MovesOnEdgesCorners)
 {
     othello::board::Board b;
-    std::vector<std::vector<int>> state(8, std::vector<int>(8, WHITE));
+    std::vector<std::vector<Disc>> state(8, std::vector<Disc>(8, WHITE));
     state[0][0] = EMPTY;
     state[0][7] = EMPTY;
     state[7][0] = EMPTY;
@@ -197,7 +231,7 @@ TEST(MoveLogic, MovesOnEdgesCorners)
 TEST(MoveLogic, ValidMoveAfterPass)
 {
     othello::board::Board b;
-    std::vector<std::vector<int>> state(8, std::vector<int>(8, EMPTY));
+    std::vector<std::vector<Disc>> state(8, std::vector<Disc>(8, EMPTY));
     // Legal scenario: black at (0,1), white at (0,2), empty at (0,0)
     state[0][1] = BLACK;
     state[0][2] = WHITE;
@@ -208,7 +242,7 @@ TEST(MoveLogic, ValidMoveAfterPass)
 TEST(MoveLogic, NoValidMovesForOnePlayer)
 {
     othello::board::Board b;
-    std::vector<std::vector<int>> state(8, std::vector<int>(8, BLACK));
+    std::vector<std::vector<Disc>> state(8, std::vector<Disc>(8, BLACK));
     set_board_state(b, state, WHITE);
     EXPECT_EQ(b.compute_valid_moves(), 0);
     b.set_current_player(BLACK);
@@ -226,7 +260,7 @@ TEST(MoveLogic, FullBoard)
 TEST(MoveLogic, GameEndDetectionConsecutivePasses)
 {
     othello::board::Board b;
-    std::vector<std::vector<int>> state(8, std::vector<int>(8, BLACK));
+    std::vector<std::vector<Disc>> state(8, std::vector<Disc>(8, BLACK));
     set_board_state(b, state, BLACK);
     EXPECT_EQ(b.compute_valid_moves(), 0);
     b.set_current_player(WHITE);
@@ -236,7 +270,7 @@ TEST(MoveLogic, GameEndDetectionConsecutivePasses)
 TEST(MoveLogic, GameEndDetectionNotFullNoMoves)
 {
     othello::board::Board b;
-    std::vector<std::vector<int>> state(8, std::vector<int>(8, EMPTY));
+    std::vector<std::vector<Disc>> state(8, std::vector<Disc>(8, EMPTY));
     // Fill board with alternating discs, no valid moves
     for (int i = 0; i < 8; ++i)
     {

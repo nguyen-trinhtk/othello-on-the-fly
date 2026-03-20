@@ -2,7 +2,7 @@
 
 // Helper: fill board with a specific disc
 template <typename BoardType>
-void fill_board(BoardType &board, int disc)
+void fill_board(BoardType &board, Disc disc)
 {
     for (int r = 0; r < 8; ++r)
         for (int c = 0; c < 8; ++c)
@@ -11,7 +11,10 @@ void fill_board(BoardType &board, int disc)
 
 // Helper: set up board with arbitrary state and player
 #include <vector>
-inline void set_board_state(othello::board::Board &board, const std::vector<std::vector<int>> &state, int player)
+inline void set_board_state(
+    othello::board::Board &board,
+    const std::vector<std::vector<Disc>> &state,
+    Disc player)
 {
     // Clear the board first to avoid leftover discs from default setup
     fill_board(board, EMPTY);

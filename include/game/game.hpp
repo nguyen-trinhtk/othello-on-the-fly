@@ -1,8 +1,6 @@
 #ifndef GAME_HPP
 #define GAME_HPP
 
-#include "board/board.hpp"
-
 class Game
 {
 public:

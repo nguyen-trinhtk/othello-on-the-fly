@@ -61,16 +61,6 @@ TEST(BoardState, SetSquareOverwrite)
     EXPECT_EQ(b.get_square(2, 2), WHITE);
 }
 
-// print_square tests
-TEST(BoardState, PrintSquareSymbols)
-{
-
-    othello::board::Board b;
-    EXPECT_EQ(b.print_square(BLACK), std::string(BLACK_DISC));
-    EXPECT_EQ(b.print_square(WHITE), std::string(WHITE_DISC));
-    EXPECT_EQ(b.print_square(EMPTY), std::string(EMPTY_SQUARE));
-}
-
 // get_black_count, get_white_count tests
 TEST(BoardState, DiscCountsInitial)
 {
