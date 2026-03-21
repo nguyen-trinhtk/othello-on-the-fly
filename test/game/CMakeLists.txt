@@ -9,6 +9,7 @@ enable_testing()
 include(FetchContent)
 FetchContent_Declare(
   googletest
+  DOWNLOAD_EXTRACT_TIMESTAMP TRUE
   URL https://github.com/google/googletest/archive/refs/heads/main.zip
 )
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
@@ -16,7 +17,7 @@ FetchContent_MakeAvailable(googletest)
 
 add_executable(test_console_ui test_console_ui.cpp)
 
-target_link_libraries(test_console_ui PRIVATE game board engine gtest_main)
+target_link_libraries(test_console_ui PRIVATE game gtest_main)
 
 target_include_directories(test_console_ui PRIVATE ../../include)
 target_include_directories(test_console_ui PRIVATE ..)

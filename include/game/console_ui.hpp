@@ -41,7 +41,7 @@ namespace othello
         class ConsoleUi
         {
         public:
-            ConsoleUi(std::istream &in, std::ostream &out, std::ostream &err);
+            ConsoleUi(std::istream &in, std::ostream &out, std::ostream &err, bool enable_screen_clear = false);
 
             void show_board(const board::Board &board, bool show_valid_moves = true) const;
             void show_score_summary(const board::Board &board) const;
@@ -54,6 +54,7 @@ namespace othello
             std::istream &in_;
             std::ostream &out_;
             std::ostream &err_;
+            bool enable_screen_clear_;
         };
 
     } // namespace game_ui

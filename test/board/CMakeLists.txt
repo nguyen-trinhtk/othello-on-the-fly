@@ -11,6 +11,7 @@ enable_testing()
 include(FetchContent)
 FetchContent_Declare(
   googletest
+  DOWNLOAD_EXTRACT_TIMESTAMP TRUE
   URL https://github.com/google/googletest/archive/refs/heads/main.zip
 )
 # For Windows: Prevent overriding the parent project's compiler/linker settings

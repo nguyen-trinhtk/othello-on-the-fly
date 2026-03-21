@@ -4,6 +4,7 @@
 #include <cctype>
 #include <sstream>
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 namespace
@@ -91,7 +92,7 @@ namespace
 
     [[nodiscard]] std::vector<Move> sorted_valid_moves(const Board &board)
     {
-        std::vector<Move> moves(board.get_valid_moves().begin(), board.get_valid_moves().end());
+        std::vector<Move> moves = board.get_moves_for_current_state();
         std::sort(
             moves.begin(),
             moves.end(),
@@ -166,6 +167,12 @@ namespace othello
 
         std::string render_board(const Board &board, bool show_valid_moves)
         {
+            std::unordered_set<Move, othello::board::MoveHash> valid_moves;
+            if (show_valid_moves)
+            {
+                valid_moves = board.get_valid_moves();
+            }
+
             std::ostringstream out;
             out << "\n"
                 << "Turn: " << player_name(board.get_current_player()) << "\n"
@@ -181,7 +188,7 @@ namespace othello
                     std::string_view cell = disc_symbol(board.get_square(row, col));
                     if (show_valid_moves &&
                         board.get_square(row, col) == EMPTY &&
-                        board.is_valid_move(row, col, board.get_current_player()))
+                        valid_moves.find(Move(row, col)) != valid_moves.end())
                     {
                         cell = "·";
                     }
@@ -251,15 +258,17 @@ namespace othello
             return out.str();
         }
 
-        ConsoleUi::ConsoleUi(std::istream &in, std::ostream &out, std::ostream &err)
-            : in_(in), out_(out), err_(err)
+        ConsoleUi::ConsoleUi(std::istream &in, std::ostream &out, std::ostream &err, bool enable_screen_clear)
+            : in_(in), out_(out), err_(err), enable_screen_clear_(enable_screen_clear)
         {
         }
 
         void ConsoleUi::show_board(const Board &board, bool show_valid_moves) const
         {
-            // Clear the terminal and move cursor to top-left
-            out_ << "\033[2J\033[H";
+            if (enable_screen_clear_)
+            {
+                out_ << "\033[2J\033[H";
+            }
             out_ << render_board(board, show_valid_moves);
         }
 

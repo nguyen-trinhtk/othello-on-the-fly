@@ -10,7 +10,9 @@ gmon.out
 
 # Build directory
 build/
+build-coverage/
 Testing/
+coverage-report/
 
 # OS-specific files
 .DS_Store

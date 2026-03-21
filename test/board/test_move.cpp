@@ -8,9 +8,31 @@ othello::board::Move make_move(int row, int col)
 {
     return othello::board::Move(row, col);
 }
+
+const othello::board::Move *find_move(
+    const std::vector<othello::board::Move> &moves,
+    int row,
+    int col)
+{
+    for (const auto &move : moves)
+    {
+        if (move.row == row && move.col == col)
+        {
+            return &move;
+        }
+    }
+    return nullptr;
+}
 }
 
 // --- is_valid_move tests ---
+TEST(MoveLogic, ValidMoveBlackWithoutPrecompute)
+{
+    othello::board::Board b;
+    b.set_current_player(BLACK);
+    EXPECT_TRUE(b.is_valid_move(2, 3, BLACK));
+}
+
 TEST(MoveLogic, ValidMoveBlack)
 {
     othello::board::Board b;
@@ -24,7 +46,7 @@ TEST(MoveLogic, ValidMoveWhite)
     b.set_current_player(BLACK);
     b.compute_valid_moves();
     auto move = make_move(2, 3);
-    b.process_move(move, BLACK);
+    ASSERT_EQ(b.process_move(move, BLACK), OK);
     b.set_current_player(WHITE);
     b.compute_valid_moves();
     EXPECT_TRUE(b.is_valid_move(2, 2, WHITE));
@@ -68,7 +90,7 @@ TEST(MoveLogic, ProcessValidMove)
     b.compute_valid_moves();
     int before = b.get_black_count();
     auto move = make_move(2, 3);
-    b.process_move(move, BLACK);
+    ASSERT_EQ(b.process_move(move, BLACK), OK);
     EXPECT_GT(b.get_black_count(), before);
 }
 TEST(MoveLogic, ProcessInvalidMove)
@@ -78,7 +100,7 @@ TEST(MoveLogic, ProcessInvalidMove)
     b.compute_valid_moves();
     int before = b.get_black_count();
     auto move = make_move(0, 0);
-    b.process_move(move, BLACK);
+    EXPECT_EQ(b.process_move(move, BLACK), ERR_INVALID_MOVE);
     EXPECT_EQ(b.get_black_count(), before);
 }
 TEST(MoveLogic, EdgeMove)
@@ -91,7 +113,7 @@ TEST(MoveLogic, EdgeMove)
     set_board_state(b, state, BLACK);
     EXPECT_TRUE(b.is_valid_move(0, 0, BLACK));
     auto move = make_move(0, 0);
-    b.process_move(move, BLACK);
+    ASSERT_EQ(b.process_move(move, BLACK), OK);
     EXPECT_EQ(b.get_black_count(), 3); // (0,0) placed, (0,1) flipped, (0,2) original
 }
 TEST(MoveLogic, CornerMove)
@@ -104,7 +126,7 @@ TEST(MoveLogic, CornerMove)
     set_board_state(b, state, BLACK);
     EXPECT_TRUE(b.is_valid_move(0, 0, BLACK));
     auto move = make_move(0, 0);
-    b.process_move(move, BLACK);
+    ASSERT_EQ(b.process_move(move, BLACK), OK);
     EXPECT_EQ(b.get_black_count(), 3); // (0,0) placed, (1,1) flipped, (2,2) original
 }
 TEST(MoveLogic, MultiDirectionFlips)
@@ -118,7 +140,7 @@ TEST(MoveLogic, MultiDirectionFlips)
     set_board_state(b, state, BLACK);
     EXPECT_TRUE(b.is_valid_move(3, 4, BLACK));
     auto move = make_move(3, 4);
-    b.process_move(move, BLACK);
+    ASSERT_EQ(b.process_move(move, BLACK), OK);
     EXPECT_EQ(b.get_black_count(), 4); // (3,2), (2,3), (3,4) placed, (3,3) flipped
 }
 TEST(MoveLogic, ProcessInvalidPlayer)
@@ -128,8 +150,40 @@ TEST(MoveLogic, ProcessInvalidPlayer)
     b.compute_valid_moves();
     int before = b.get_black_count();
     auto move = make_move(2, 3);
-    b.process_move(move, static_cast<Disc>(2));
+    EXPECT_EQ(b.process_move(move, static_cast<Disc>(2)), ERR_INVALID_MOVE);
     EXPECT_EQ(b.get_black_count(), before);
+}
+
+TEST(MoveLogic, ProcessMoveUsesPrecomputedFlipMetadata)
+{
+    othello::board::Board b;
+    b.set_current_player(BLACK);
+
+    const auto generated_moves = b.get_moves_for_current_state();
+    const auto *move = find_move(generated_moves, 2, 3);
+
+    ASSERT_NE(move, nullptr);
+    ASSERT_EQ(b.process_move(*move, BLACK), OK);
+    EXPECT_EQ(b.get_square(2, 3), BLACK);
+    EXPECT_EQ(b.get_square(3, 3), BLACK);
+}
+
+TEST(MoveLogic, UndoMoveRestoresBoardAfterPrecomputedMove)
+{
+    othello::board::Board b;
+    b.set_current_player(BLACK);
+    const othello::board::Board before = b;
+
+    const auto generated_moves = b.get_moves_for_current_state();
+    const auto *move = find_move(generated_moves, 2, 3);
+
+    ASSERT_NE(move, nullptr);
+    ASSERT_EQ(b.process_move(*move, BLACK), OK);
+    ASSERT_EQ(b.undo_move(*move, BLACK), OK);
+    EXPECT_EQ(b.get_hash(), before.get_hash());
+    EXPECT_EQ(b.get_black_count(), before.get_black_count());
+    EXPECT_EQ(b.get_white_count(), before.get_white_count());
+    EXPECT_EQ(b.get_current_player(), before.get_current_player());
 }
 
 // --- compute_valid_moves tests ---
@@ -145,7 +199,7 @@ TEST(MoveLogic, ComputeValidMovesAfterMove)
     b.set_current_player(BLACK);
     b.compute_valid_moves();
     auto move = make_move(2, 3);
-    b.process_move(move, BLACK);
+    ASSERT_EQ(b.process_move(move, BLACK), OK);
     b.set_current_player(WHITE);
     EXPECT_GT(b.compute_valid_moves(), 0);
 }
@@ -171,7 +225,7 @@ TEST(MoveLogic, GetValidMovesAfterBoardChange)
     b.set_current_player(BLACK);
     b.compute_valid_moves();
     auto move = make_move(2, 3);
-    b.process_move(move, BLACK);
+    ASSERT_EQ(b.process_move(move, BLACK), OK);
     b.set_current_player(WHITE);
     b.compute_valid_moves();
     EXPECT_EQ(b.get_valid_moves().size(), b.compute_valid_moves());
@@ -181,7 +235,6 @@ TEST(MoveLogic, GetMovesForCurrentStateDoesNotMutateBoard)
 {
     othello::board::Board b;
     b.set_current_player(BLACK);
-    b.compute_valid_moves();
 
     const int black_before = b.get_black_count();
     const int white_before = b.get_white_count();
@@ -197,6 +250,53 @@ TEST(MoveLogic, GetMovesForCurrentStateDoesNotMutateBoard)
     EXPECT_EQ(b.get_valid_moves(), valid_moves_before);
 }
 
+TEST(MoveLogic, GetMovesForCurrentStateIncludesFlipMetadata)
+{
+    othello::board::Board b;
+    b.set_current_player(BLACK);
+
+    const auto generated_moves = b.get_moves_for_current_state();
+    const auto *move = find_move(generated_moves, 2, 3);
+
+    ASSERT_NE(move, nullptr);
+    ASSERT_EQ(move->flipped_discs.size(), 1U);
+    EXPECT_EQ(move->flipped_discs.front(), std::make_pair(3, 3));
+}
+
+TEST(MoveLogic, GetMovesForCurrentStateIsStableAcrossRepeatedCalls)
+{
+    othello::board::Board b;
+    b.set_current_player(BLACK);
+
+    const auto first_result = b.get_moves_for_current_state();
+    const auto second_result = b.get_moves_for_current_state();
+
+    ASSERT_EQ(first_result.size(), second_result.size());
+    for (const auto &move : first_result)
+    {
+        const auto *repeated = find_move(second_result, move.row, move.col);
+        ASSERT_NE(repeated, nullptr);
+        EXPECT_EQ(repeated->flipped_discs, move.flipped_discs);
+    }
+}
+
+TEST(MoveLogic, GetMovesForCurrentStateChangesAfterBoardStateChanges)
+{
+    othello::board::Board b;
+    b.set_current_player(BLACK);
+
+    const auto opening_moves = b.get_moves_for_current_state();
+
+    auto move = make_move(2, 3);
+    ASSERT_EQ(b.process_move(move, BLACK), OK);
+    b.set_current_player(WHITE);
+
+    const auto response_moves = b.get_moves_for_current_state();
+
+    EXPECT_NE(opening_moves.size(), response_moves.size());
+    EXPECT_NE(find_move(response_moves, 2, 2), nullptr);
+}
+
 TEST(MoveLogic, IsGameOverPreservesCurrentTurnAndValidMoves)
 {
     othello::board::Board b;
@@ -209,6 +309,23 @@ TEST(MoveLogic, IsGameOverPreservesCurrentTurnAndValidMoves)
     EXPECT_FALSE(b.is_game_over());
     EXPECT_EQ(b.get_current_player(), player_before);
     EXPECT_EQ(b.get_valid_moves(), valid_moves_before);
+}
+
+TEST(MoveLogic, HashChangesWithBoardStateAndCurrentPlayer)
+{
+    othello::board::Board initial_board;
+    othello::board::Board same_board;
+    othello::board::Board different_turn_board;
+    othello::board::Board changed_board;
+
+    different_turn_board.set_current_player(WHITE);
+    auto move = make_move(2, 3);
+    ASSERT_EQ(changed_board.process_move(move, BLACK), OK);
+    changed_board.set_current_player(WHITE);
+
+    EXPECT_EQ(initial_board.get_hash(), same_board.get_hash());
+    EXPECT_NE(initial_board.get_hash(), different_turn_board.get_hash());
+    EXPECT_NE(initial_board.get_hash(), changed_board.get_hash());
 }
 
 // --- parse_move (not easily testable without refactor) ---

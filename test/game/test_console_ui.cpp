@@ -93,3 +93,29 @@ TEST(ConsoleUiTest, PromptForMoveReturnsNulloptOnQuit)
     EXPECT_FALSE(move.has_value());
     EXPECT_NE(output.str().find("Ending the current game."), std::string::npos);
 }
+
+TEST(ConsoleUiTest, ShowBoardDoesNotEmitAnsiByDefault)
+{
+    othello::board::Board board;
+    std::istringstream input;
+    std::ostringstream output;
+    std::ostringstream error;
+    othello::game_ui::ConsoleUi ui(input, output, error);
+
+    ui.show_board(board);
+
+    EXPECT_EQ(output.str().find("\033[2J\033[H"), std::string::npos);
+}
+
+TEST(ConsoleUiTest, ShowBoardCanEmitAnsiWhenEnabled)
+{
+    othello::board::Board board;
+    std::istringstream input;
+    std::ostringstream output;
+    std::ostringstream error;
+    othello::game_ui::ConsoleUi ui(input, output, error, true);
+
+    ui.show_board(board);
+
+    EXPECT_NE(output.str().find("\033[2J\033[H"), std::string::npos);
+}

@@ -10,6 +10,7 @@ enable_testing()
 include(FetchContent)
 FetchContent_Declare(
   googletest
+  DOWNLOAD_EXTRACT_TIMESTAMP TRUE
   URL https://github.com/google/googletest/archive/refs/heads/main.zip
 )
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
@@ -21,7 +22,7 @@ add_executable(test_alphabeta test_alphabeta.cpp)
 # Adjust paths if needed
 find_library(ENGINE_LIB engine PATHS ../../src/engine)
 find_library(BOARD_LIB board PATHS ../../src/board)
-target_link_libraries(test_alphabeta PRIVATE engine board gtest_main)
+target_link_libraries(test_alphabeta PRIVATE engine gtest_main)
 
 # Include headers
 target_include_directories(test_alphabeta PRIVATE ../../include)
