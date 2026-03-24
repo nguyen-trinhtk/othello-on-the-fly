@@ -5,7 +5,7 @@
 #include <cstdint>
 
 // --- AI/Search Constants ---
-constexpr int ALPHABETA_DEPTH = 5;
+constexpr int ALPHABETA_DEPTH = 10;
 constexpr int ALPHABETA_MIN = -1000000;
 constexpr int ALPHABETA_MAX = 1000000;
 
