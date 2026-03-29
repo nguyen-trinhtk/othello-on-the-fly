@@ -48,6 +48,7 @@ namespace othello
             void show_valid_moves(const board::Board &board) const;
             void show_help() const;
             void show_message(std::string_view message) const;
+            void show_ai_thinking() const;
             [[nodiscard]] std::optional<board::Move> prompt_for_move(const board::Board &board) const;
 
         private:

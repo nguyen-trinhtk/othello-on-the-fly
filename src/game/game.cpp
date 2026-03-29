@@ -12,99 +12,100 @@
 
 namespace
 {
-[[nodiscard]] std::string player_name(Disc player)
-{
-    return player == BLACK ? "Black" : "White";
-}
-
-[[nodiscard]] std::string format_move(const othello::board::Move &move)
-{
-    return std::string(1, static_cast<char>('A' + move.col)) +
-           std::to_string(move.row + 1);
-}
-
-[[nodiscard]] bool advance_past_empty_turn(
-    othello::board::Board &board,
-    const othello::game_ui::ConsoleUi &ui)
-{
-    if (board.has_valid_moves(board.get_current_player()))
+    [[nodiscard]] std::string player_name(Disc player)
     {
-        return false;
+        return player == BLACK ? "Black" : "White";
     }
 
-    ui.show_message("No valid moves for " + player_name(board.get_current_player()) + ". Skipping turn.");
-    board.set_current_player(opponent(board.get_current_player()));
-    ui.show_board(board);
-    if (board.has_valid_moves(board.get_current_player()))
+    [[nodiscard]] std::string format_move(const othello::board::Move &move)
     {
-        return false;
+        return std::string(1, static_cast<char>('A' + move.col)) +
+               std::to_string(move.row + 1);
     }
 
-    ui.show_message("No valid moves for both players. Game over.");
-    return true;
-}
-
-template <typename MoveProvider>
-void run_game_loop(
-    const othello::game_ui::ConsoleUi &ui,
-    std::string_view start_message,
-    bool show_help,
-    MoveProvider &&move_provider)
-{
-    othello::board::Board board;
-
-    if (!start_message.empty())
+    [[nodiscard]] bool advance_past_empty_turn(
+        othello::board::Board &board,
+        const othello::game_ui::ConsoleUi &ui)
     {
-        ui.show_message(start_message);
-    }
-    if (show_help)
-    {
-        ui.show_help();
-    }
-
-    while (true)
-    {
-        ui.show_board(board);
-        if (advance_past_empty_turn(board, ui))
+        if (board.has_valid_moves(board.get_current_player()))
         {
-            break;
+            return false;
         }
 
-        const auto move = std::invoke(move_provider, board, ui);
-        if (!move.has_value())
-        {
-            return;
-        }
-
-        if (board.process_move(*move, board.get_current_player()) != OK)
-        {
-            ui.show_message("Failed to apply the selected move. Ending game.");
-            return;
-        }
+        ui.show_message("No valid moves for " + player_name(board.get_current_player()) + ". Skipping turn.");
         board.set_current_player(opponent(board.get_current_player()));
+        ui.show_board(board);
+        if (board.has_valid_moves(board.get_current_player()))
+        {
+            return false;
+        }
+
+        ui.show_message("No valid moves for both players. Game over.");
+        return true;
     }
 
-    ui.show_board(board, false);
-    ui.show_score_summary(board);
-}
-
-[[nodiscard]] std::optional<othello::board::Move> find_ai_move(
-    const othello::board::Board &board,
-    const othello::game_ui::ConsoleUi &ui,
-    std::string_view prefix)
-{
-    const auto search = othello::engine::find_best_move(board, ALPHABETA_DEPTH);
-    if (!search.best_move.has_value())
+    template <typename MoveProvider>
+    void run_game_loop(
+        const othello::game_ui::ConsoleUi &ui,
+        std::string_view start_message,
+        bool show_help,
+        MoveProvider &&move_provider)
     {
-        ui.show_message(std::string(prefix) + " could not find a move.");
-        return std::nullopt;
+        othello::board::Board board;
+
+        if (!start_message.empty())
+        {
+            ui.show_message(start_message);
+        }
+        if (show_help)
+        {
+            ui.show_help();
+        }
+
+        while (true)
+        {
+            ui.show_board(board);
+            if (advance_past_empty_turn(board, ui))
+            {
+                break;
+            }
+
+            const auto move = std::invoke(move_provider, board, ui);
+            if (!move.has_value())
+            {
+                return;
+            }
+
+            if (board.process_move(*move, board.get_current_player()) != OK)
+            {
+                ui.show_message("Failed to apply the selected move. Ending game.");
+                return;
+            }
+            board.set_current_player(opponent(board.get_current_player()));
+        }
+
+        ui.show_board(board, false);
+        ui.show_score_summary(board);
     }
 
-    ui.show_message(
-        std::string(prefix) + " " + format_move(*search.best_move) +
-        " (score " + std::to_string(search.score) + ")");
-    return search.best_move;
-}
+    [[nodiscard]] std::optional<othello::board::Move> find_ai_move(
+        const othello::board::Board &board,
+        const othello::game_ui::ConsoleUi &ui,
+        std::string_view prefix)
+    {
+        ui.show_ai_thinking();
+        const auto search = othello::engine::find_best_move(board, ALPHABETA_DEPTH);
+        if (!search.best_move.has_value())
+        {
+            ui.show_message(std::string(prefix) + " could not find a move.");
+            return std::nullopt;
+        }
+
+        ui.show_message(
+            std::string(prefix) + " " + format_move(*search.best_move) +
+            " (score " + std::to_string(search.score) + ")");
+        return search.best_move;
+    }
 } // namespace
 
 Game::Game() {}

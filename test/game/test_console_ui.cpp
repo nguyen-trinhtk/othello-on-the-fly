@@ -119,3 +119,15 @@ TEST(ConsoleUiTest, ShowBoardCanEmitAnsiWhenEnabled)
 
     EXPECT_NE(output.str().find("\033[2J\033[H"), std::string::npos);
 }
+
+TEST(ConsoleUiTest, ShowAiThinkingPrintsMessage)
+{
+    std::istringstream input;
+    std::ostringstream output;
+    std::ostringstream error;
+    othello::game_ui::ConsoleUi ui(input, output, error);
+
+    ui.show_ai_thinking();
+
+    EXPECT_NE(output.str().find("AI is thinking..."), std::string::npos);
+}
