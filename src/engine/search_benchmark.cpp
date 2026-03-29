@@ -22,15 +22,17 @@ namespace
         int parallel_root_min_moves = 5;
         int parallel_root_max_workers = 0;
         int parallel_root_batch_scale = 2;
+        int parallel_root_seed_moves = 2;
+        bool parallel_root_use_pvs = false;
     };
     void print_usage(const char *program_name)
     {
         std::cout
             << "Usage: " << program_name << " [--depth N] [--repeats N] [--scenario opening|midgame|endgame]\n"
-            << "       [--node-limit N] [--time-ms N] [--parallel-root]\n"
+            << "       [--node-limit N] [--time-ms N] [--parallel-root] [--parallel-root-pvs]\n"
             << "       [--parallel-root-min-depth N] [--parallel-root-min-moves N]\n"
-            << "       [--parallel-root-max-workers N]\n"
-            << "       [--parallel-root-batch-scale N]\n";
+            << "       [--parallel-root-max-workers N] [--parallel-root-batch-scale N]\n"
+            << "       [--parallel-root-seed-moves N]\n";
     }
 
     [[nodiscard]] int parse_int_arg(const std::string &value, const char *flag_name)
@@ -135,6 +137,12 @@ namespace
                 continue;
             }
 
+            if (arg == "--parallel-root-pvs")
+            {
+                config.parallel_root_use_pvs = true;
+                continue;
+            }
+
             if (index + 1 >= argc)
             {
                 std::cerr << "Missing value for " << arg << '\n';
@@ -178,6 +186,10 @@ namespace
             {
                 config.parallel_root_batch_scale = parse_int_arg(value, "--parallel-root-batch-scale");
             }
+            else if (arg == "--parallel-root-seed-moves")
+            {
+                config.parallel_root_seed_moves = parse_int_arg(value, "--parallel-root-seed-moves");
+            }
 
             else
             {
@@ -203,6 +215,8 @@ int main(int argc, char **argv)
     options.parallel_root_min_moves = config.parallel_root_min_moves;
     options.parallel_root_max_workers = config.parallel_root_max_workers;
     options.parallel_root_batch_scale = config.parallel_root_batch_scale;
+    options.parallel_root_seed_moves = config.parallel_root_seed_moves;
+    options.parallel_root_use_pvs = config.parallel_root_use_pvs;
 
     std::uint64_t total_nodes = 0;
     std::uint64_t total_tt_hits = 0;
@@ -247,6 +261,9 @@ int main(int argc, char **argv)
             std::cout << config.parallel_root_max_workers << '\n';
         }
         std::cout << "Parallel root batch scale: " << config.parallel_root_batch_scale << '\n';
+        std::cout << "Parallel root seed moves: " << config.parallel_root_seed_moves << '\n';
+        std::cout << "Parallel root PVS: "
+                  << (config.parallel_root_use_pvs ? "yes" : "no") << '\n';
     }
 
     if (config.node_limit.has_value())

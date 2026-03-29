@@ -111,7 +111,8 @@ namespace othello
                     int depth,
                     int alpha,
                     int beta,
-                    std::size_t move_order)
+                    std::size_t move_order,
+                    bool use_scout_window)
                 {
                     reset_parallel_root_worker_state(worker, root_board);
 
@@ -138,6 +139,8 @@ namespace othello
 
                     result.stats = worker.context.stats;
                     result.completed = !worker.context.aborted;
+                    result.exact = !use_scout_window;
+                    result.failed_high = use_scout_window && result.score > alpha;
                     return result;
                 }
 
@@ -183,7 +186,8 @@ namespace othello
                         const SearchOptions &options,
                         std::size_t first_parallel_move,
                         std::size_t batch_size,
-                        std::size_t worker_count)
+                        std::size_t worker_count,
+                        bool use_scout_window)
                     {
                         if (worker_count == 0)
                         {
@@ -206,6 +210,7 @@ namespace othello
                         batch_first_parallel_move_ = first_parallel_move;
                         batch_remaining_root_moves_ = batch_size;
                         batch_active_workers_ = worker_count;
+                        batch_use_scout_window_ = use_scout_window;
                         batch_finished_workers_ = 0;
                         batch_in_flight_ = true;
                         next_work_item_.store(0, std::memory_order_relaxed);
@@ -292,7 +297,8 @@ namespace othello
                                     batch_depth_,
                                     batch_alpha_,
                                     batch_beta_,
-                                    move_order);
+                                    move_order,
+                                    batch_use_scout_window_);
                             }
 
                             {
@@ -323,6 +329,7 @@ namespace othello
                     std::size_t batch_first_parallel_move_ = 0;
                     std::size_t batch_remaining_root_moves_ = 0;
                     std::size_t batch_active_workers_ = 0;
+                    bool batch_use_scout_window_ = false;
                     std::size_t batch_finished_workers_ = 0;
                     std::size_t batch_generation_ = 0;
                     bool batch_in_flight_ = false;
@@ -352,7 +359,8 @@ namespace othello
                 int beta,
                 const SearchOptions &options,
                 std::size_t first_parallel_move,
-                std::size_t batch_size)
+                std::size_t batch_size,
+                bool use_scout_window)
             {
                 const std::size_t worker_count = parallel_root_worker_count(options, batch_size);
                 if (worker_count == 0 || batch_size == 0)
@@ -371,7 +379,8 @@ namespace othello
                     options,
                     first_parallel_move,
                     batch_size,
-                    worker_count);
+                    worker_count,
+                    use_scout_window);
             }
         } // namespace detail
     } // namespace engine

@@ -78,6 +78,11 @@ namespace othello
                     return;
                 }
 
+                if (!move_result.exact)
+                {
+                    return;
+                }
+
                 accept_root_result(search_result, best_move_order, move_result);
             }
 
@@ -109,6 +114,90 @@ namespace othello
                        !options.node_limit.has_value() &&
                        depth >= effective_parallel_root_min_depth(options) &&
                        root_move_count >= effective_parallel_root_min_moves(options);
+            }
+
+            [[nodiscard]] int root_scout_beta(int alpha, int beta) noexcept
+            {
+                if (alpha >= beta)
+                {
+                    return beta;
+                }
+
+                if (alpha >= ALPHABETA_MAX - 1)
+                {
+                    return ALPHABETA_MAX;
+                }
+
+                return std::min(beta, alpha + 1);
+            }
+
+            void update_elapsed(SearchContext &context);
+
+            int search_subtree_impl(
+                othello::board::Board &board,
+                int depth,
+                int alpha,
+                int beta,
+                Disc perspective_player,
+                SearchContext &context,
+                int ply);
+
+            [[nodiscard]] std::size_t effective_parallel_root_seed_moves(
+                const SearchOptions &options) noexcept
+            {
+                return options.parallel_root_seed_moves <= 1
+                           ? 1U
+                           : static_cast<std::size_t>(options.parallel_root_seed_moves);
+            }
+
+            [[nodiscard]] std::optional<RootMoveResult> evaluate_root_move_in_place(
+                othello::board::Board &board,
+                const othello::board::Move &candidate,
+                Disc perspective_player,
+                int depth,
+                int alpha,
+                int beta,
+                SearchContext &context,
+                std::size_t move_order,
+                bool use_scout_window = false)
+            {
+                if (board.process_move(candidate, perspective_player) != OK)
+                {
+                    return std::nullopt;
+                }
+                board.set_current_player(opponent(perspective_player));
+
+                const int search_beta = use_scout_window ? root_scout_beta(alpha, beta) : beta;
+                const int eval = search_subtree_impl(
+                    board,
+                    std::max(0, depth - 1),
+                    alpha,
+                    search_beta,
+                    perspective_player,
+                    context,
+                    1);
+
+                board.set_current_player(perspective_player);
+                if (board.undo_move(candidate, perspective_player) != OK)
+                {
+                    context.aborted = true;
+                    update_elapsed(context);
+                    return std::nullopt;
+                }
+
+                if (context.aborted)
+                {
+                    return std::nullopt;
+                }
+
+                RootMoveResult move_result{};
+                move_result.move = candidate;
+                move_result.score = eval;
+                move_result.completed = true;
+                move_result.exact = !use_scout_window;
+                move_result.failed_high = use_scout_window && eval > alpha;
+                move_result.move_order = move_order;
+                return move_result;
             }
 
             [[nodiscard]] int player_index(Disc player) noexcept
@@ -514,43 +603,73 @@ namespace othello
                 {
                     int alpha = ALPHABETA_MIN;
                     std::size_t first_parallel_move = 0;
+                    const std::size_t seed_move_count =
+                        std::min(moves.size(), effective_parallel_root_seed_moves(context.options));
+                    const bool use_parallel_root_pvs = context.options.parallel_root_use_pvs;
 
-                    if (!moves.empty())
+                    for (std::size_t move_order = 0; move_order < seed_move_count; ++move_order)
                     {
-                        const auto &candidate = moves[0];
-                        if (board.process_move(candidate, perspective_player) == OK)
+                        if (budget_exhausted(context))
                         {
-                            board.set_current_player(opponent(perspective_player));
+                            break;
+                        }
 
-                            const int eval = search_subtree_impl(
+                        const bool use_scout_window = use_parallel_root_pvs && move_order > 0;
+                        auto move_result = evaluate_root_move_in_place(
+                            board,
+                            moves[move_order],
+                            perspective_player,
+                            depth,
+                            alpha,
+                            beta,
+                            context,
+                            move_order,
+                            use_scout_window);
+
+                        if (context.aborted)
+                        {
+                            break;
+                        }
+
+                        if (!move_result.has_value())
+                        {
+                            continue;
+                        }
+
+                        if (move_result->failed_high)
+                        {
+                            move_result = evaluate_root_move_in_place(
                                 board,
-                                std::max(0, depth - 1),
+                                moves[move_order],
+                                perspective_player,
+                                depth,
                                 alpha,
                                 beta,
-                                perspective_player,
                                 context,
-                                1);
+                                move_order,
+                                false);
 
-                            board.set_current_player(perspective_player);
-                            if (board.undo_move(candidate, perspective_player) != OK)
+                            if (context.aborted)
                             {
-                                context.aborted = true;
-                                update_elapsed(context);
+                                break;
                             }
-                            else if (!context.aborted)
+
+                            if (!move_result.has_value())
                             {
-                                RootMoveResult move_result{};
-                                move_result.move = candidate;
-                                move_result.score = eval;
-                                move_result.completed = true;
-                                move_result.move_order = 0;
-
-                                accept_root_result(result, best_move_order, move_result);
-
-                                alpha = std::max(alpha, move_result.score);
-                                first_parallel_move = 1;
+                                continue;
                             }
                         }
+
+                        first_parallel_move = move_order + 1;
+
+                        if (!move_result->exact)
+                        {
+                            continue;
+                        }
+
+                        accept_root_result(result, best_move_order, *move_result);
+
+                        alpha = std::max(alpha, move_result->score);
                     }
 
                     if (!context.aborted)
@@ -568,6 +687,11 @@ namespace othello
                             }
 
                             std::vector<RootMoveResult> parallel_results(batch_size);
+                            const int batch_alpha = alpha;
+                            const bool use_scout_window = use_parallel_root_pvs;
+                            const int batch_beta = use_scout_window
+                                                       ? root_scout_beta(batch_alpha, beta)
+                                                       : beta;
 
                             detail::evaluate_parallel_root_batch(
                                 parallel_results,
@@ -575,11 +699,12 @@ namespace othello
                                 moves,
                                 perspective_player,
                                 depth,
-                                alpha,
-                                beta,
+                                batch_alpha,
+                                batch_beta,
                                 context.options,
                                 batch_first_move,
-                                batch_size);
+                                batch_size,
+                                use_scout_window);
 
                             for (const RootMoveResult &move_result : parallel_results)
                             {
@@ -589,7 +714,38 @@ namespace othello
                                     break;
                                 }
 
-                                alpha = std::max(alpha, move_result.score);
+                                if (move_result.failed_high)
+                                {
+                                    const auto exact_result = evaluate_root_move_in_place(
+                                        board,
+                                        moves[move_result.move_order],
+                                        perspective_player,
+                                        depth,
+                                        alpha,
+                                        beta,
+                                        context,
+                                        move_result.move_order,
+                                        false);
+
+                                    if (context.aborted)
+                                    {
+                                        break;
+                                    }
+
+                                    if (!exact_result.has_value())
+                                    {
+                                        continue;
+                                    }
+
+                                    accept_root_result(result, best_move_order, *exact_result);
+                                    alpha = std::max(alpha, exact_result->score);
+                                    continue;
+                                }
+
+                                if (move_result.exact)
+                                {
+                                    alpha = std::max(alpha, move_result.score);
+                                }
                             }
 
                             batch_first_move += batch_size;
@@ -607,44 +763,29 @@ namespace othello
                             break;
                         }
 
-                        const auto &candidate = moves[move_order];
-                        if (board.process_move(candidate, perspective_player) != OK)
-                        {
-                            continue;
-                        }
-                        board.set_current_player(opponent(perspective_player));
-
-                        const int eval = search_subtree_impl(
+                        const auto move_result = evaluate_root_move_in_place(
                             board,
-                            std::max(0, depth - 1),
+                            moves[move_order],
+                            perspective_player,
+                            depth,
                             alpha,
                             beta,
-                            perspective_player,
                             context,
-                            1);
-
-                        board.set_current_player(perspective_player);
-                        if (board.undo_move(candidate, perspective_player) != OK)
-                        {
-                            context.aborted = true;
-                            update_elapsed(context);
-                            break;
-                        }
+                            move_order);
 
                         if (context.aborted)
                         {
                             break;
                         }
 
-                        RootMoveResult move_result{};
-                        move_result.move = candidate;
-                        move_result.score = eval;
-                        move_result.completed = true;
-                        move_result.move_order = move_order;
+                        if (!move_result.has_value())
+                        {
+                            continue;
+                        }
 
-                        accept_root_result(result, best_move_order, move_result);
+                        accept_root_result(result, best_move_order, *move_result);
 
-                        alpha = std::max(alpha, move_result.score);
+                        alpha = std::max(alpha, move_result->score);
                     }
                 }
 

@@ -12,6 +12,6 @@ Next:
 - Parallelization
 
 Later:
-- Heuristic evaluation
+- Heuristic evaluation, ordering move?
 - Additional pruning experiments: null-move pruning, late move reductions, etc.
 - Better UI polish

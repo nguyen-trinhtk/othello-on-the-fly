@@ -377,9 +377,31 @@ TEST(ParallelRootTest, MatchesSequentialWhenParallelRootRunsInMultipleAlphaRefre
     options.max_depth = 5;
     options.parallel_root_max_workers = 2;
     options.parallel_root_batch_scale = 1;
+    options.parallel_root_seed_moves = 1;
 
     for (int attempt = 0; attempt < 8; ++attempt)
     {
+        expect_parallel_matches_sequential(board, options);
+    }
+}
+
+TEST(ParallelRootTest, MatchesSequentialAcrossParallelRootSeedMoveCounts)
+{
+    othello::board::Board board = make_parallel_eligible_midgame_board();
+
+    EXPECT_GE(board.get_moves_for_current_state().size(), 5U);
+
+    const std::array<int, 3> seed_counts = {1, 2, 3};
+    for (const int seed_count : seed_counts)
+    {
+        SCOPED_TRACE(::testing::Message() << "seed_count=" << seed_count);
+
+        othello::engine::SearchOptions options{};
+        options.max_depth = 5;
+        options.parallel_root_max_workers = 4;
+        options.parallel_root_batch_scale = 1;
+        options.parallel_root_seed_moves = seed_count;
+
         expect_parallel_matches_sequential(board, options);
     }
 }
@@ -440,3 +462,40 @@ TEST(ParallelRootTest, MatchesSequentialWhenParallelRootUsesCoarserBatches)
     }
 }
 
+TEST(ParallelRootTest, MatchesSequentialWhenParallelRootUsesPVSAtDepthFive)
+{
+    othello::board::Board board = make_parallel_eligible_midgame_board();
+
+    EXPECT_GE(board.get_moves_for_current_state().size(), 5U);
+
+    othello::engine::SearchOptions options{};
+    options.max_depth = 5;
+    options.parallel_root_max_workers = 4;
+    options.parallel_root_batch_scale = 1;
+    options.parallel_root_seed_moves = 2;
+    options.parallel_root_use_pvs = true;
+
+    for (int attempt = 0; attempt < 8; ++attempt)
+    {
+        expect_parallel_matches_sequential(board, options);
+    }
+}
+
+TEST(ParallelRootTest, MatchesSequentialWhenParallelRootUsesPVSAtDepthSix)
+{
+    othello::board::Board board = make_parallel_eligible_midgame_board();
+
+    EXPECT_GE(board.get_moves_for_current_state().size(), 5U);
+
+    othello::engine::SearchOptions options{};
+    options.max_depth = 6;
+    options.parallel_root_max_workers = 4;
+    options.parallel_root_batch_scale = 3;
+    options.parallel_root_seed_moves = 2;
+    options.parallel_root_use_pvs = true;
+
+    for (int attempt = 0; attempt < 4; ++attempt)
+    {
+        expect_parallel_matches_sequential(board, options);
+    }
+}

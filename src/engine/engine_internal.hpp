@@ -43,6 +43,8 @@ namespace othello
                 int score = ALPHABETA_MIN;
                 SearchStats stats{};
                 bool completed = true;
+                bool exact = true;
+                bool failed_high = false;
                 std::size_t move_order = 0;
             };
 
@@ -73,7 +75,8 @@ namespace othello
                 int beta,
                 const SearchOptions &options,
                 std::size_t first_parallel_move,
-                std::size_t batch_size);
+                std::size_t batch_size,
+                bool use_scout_window);
         } // namespace detail
     } // namespace engine
 } // namespace othello

@@ -24,6 +24,8 @@ namespace othello
             int parallel_root_min_moves = 5;
             int parallel_root_max_workers = 0;
             int parallel_root_batch_scale = 2;
+            int parallel_root_seed_moves = 2;
+            bool parallel_root_use_pvs = false;
         };
 
         struct SearchStats
