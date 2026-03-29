@@ -1,164 +1,248 @@
 #include "board/board.hpp"
 
-namespace othello {
-namespace board {
-pair<int, int> Board::parse_move()
+#include <algorithm>
+
+namespace othello
 {
-    // Loop for user to enter move
-    string move_str;
-    string current_player = (current_turn == BLACK) ? "Black" : "White";
-    int row, col;
-    cout << current_player << "'s turn! " << endl;
-
-    while (1)
+    namespace board
     {
-        cout << "Enter your move: ";
-        cin >> move_str;
-
-        // Normalize input
-        move_str.erase(remove(move_str.begin(), move_str.end(), ' '), move_str.end());
-        // Normalize first character to uppercase
-        move_str[0] = toupper(move_str[0]);
-
-        // Validate move format
-        if (move_str.length() != 2 || !isalpha(move_str[0]) || !isdigit(move_str[1]))
+        namespace
         {
-            cerr << MSG_ERR_INVALID_MOVE_FORMAT << endl;
-            continue;
-        }
-        // Check if first character is a letter and second is a digit
-        if ((move_str[0] < 'A' || move_str[0] > 'H') || (move_str[1] < '1' || move_str[1] > '8'))
-        {
-            cerr << MSG_ERR_OUT_OF_BOUNDS << endl;
-            continue;
-        }
-
-        // Parse move
-        col = move_str[0] - 'A';
-        row = move_str[1] - '1';
-
-        // Check if move is valid according to Othello rules
-        if (!is_valid_move(row, col, current_turn))
-        {
-            if (get_square(row, col) != EMPTY)
+            [[nodiscard]] std::uint64_t bit_at(int row, int col) noexcept
             {
-                cerr << MSG_ERR_SQUARE_OCCUPIED << endl;
+                return 1ULL << (BOARD_SIZE * row + col);
             }
-            else
+
+            [[nodiscard]] std::uint64_t mask_for_discs(const std::vector<std::pair<int, int>> &discs) noexcept
             {
-                cerr << MSG_ERR_INVALID_MOVE << endl;
-            }
-            continue;
-        }
-        cout << current_player << " placed disc at " << move_str << endl;
-        break;
-    }
-    return make_pair(row, col);
-}
-
-bool Board::is_valid_move(int r, int c, int player)
-{
-    if (r < 0 || r >= 8 || c < 0 || c >= 8)
-        return false;
-    if (player != BLACK && player != WHITE)
-        return false;
-    return valid_moves.find(std::make_pair(r, c)) != valid_moves.end();
-}
-
-int Board::compute_valid_moves()
-{
-    valid_moves.clear();
-    uint64_t player_bits = current_turn == BLACK ? black_moves : white_moves;
-    uint64_t opp_bits = current_turn == BLACK ? white_moves : black_moves;
-    uint64_t empty = ~(black_moves | white_moves);
-
-    uint64_t moves = 0;
-
-    for (int d = 0; d < 8; ++d)
-    {
-        uint64_t mask = 0;
-        uint64_t candidates = player_bits;
-        for (int step = 0; step < 6; ++step)
-        {
-            if (dirs[d].shift > 0)
-                candidates = (candidates & dirs[d].mask) << dirs[d].shift;
-            else
-                candidates = (candidates & dirs[d].mask) >> -dirs[d].shift;
-            mask |= candidates & opp_bits;
-            candidates &= opp_bits;
-            if (!candidates)
-                break;
-        }
-        // Final shift
-        if (dirs[d].shift > 0)
-            mask = (mask & dirs[d].mask) << dirs[d].shift;
-        else
-            mask = (mask & dirs[d].mask) >> -dirs[d].shift;
-        moves |= mask & empty;
-    }
-
-    // Fill valid_moves set from bitboard
-    for (int i = 0; i < 64; ++i)
-    {
-        if ((moves >> i) & 1)
-        {
-            int r = i / 8;
-            int c = i % 8;
-            valid_moves.insert(std::make_pair(r, c));
-        }
-    }
-    return valid_moves.size();
-}
-
-int Board::process_move(int r, int c, int player)
-{
-    if (!is_valid_move(r, c, player))
-        return ERR_INVALID_MOVE;
-    uint64_t move_bit = 1ULL << (8 * r + c);
-    uint64_t player_bits = player == BLACK ? black_moves : white_moves;
-    uint64_t opp_bits = player == BLACK ? white_moves : black_moves;
-
-    uint64_t to_flip = 0;
-
-    for (int d = 0; d < 8; ++d)
-    {
-        uint64_t mask = 0;
-        uint64_t cur = move_bit;
-        for (int step = 0; step < 7; ++step)
-        {
-            // Edge masking and shifting
-            if (dirs[d].shift > 0)
-                cur = (cur & dirs[d].mask) << dirs[d].shift;
-            else
-                cur = (cur & dirs[d].mask) >> -dirs[d].shift;
-
-            if ((cur & opp_bits) != 0)
-            {
-                mask |= cur;
-            }
-            else
-            {
-                if ((cur & player_bits) != 0 && mask != 0)
+                std::uint64_t mask = 0;
+                for (const auto &[row, col] : discs)
                 {
-                    to_flip |= mask;
+                    mask |= bit_at(row, col);
                 }
-                break;
+                return mask;
             }
+        } // namespace
+
+        std::unordered_set<Move, MoveHash> Board::generate_valid_moves(Disc player) const
+        {
+            std::unordered_set<Move, MoveHash> valid_moves;
+            if (!is_player(player))
+            {
+                return valid_moves;
+            }
+
+            const std::uint64_t player_bits = player == BLACK ? black_moves : white_moves;
+            const std::uint64_t opp_bits = player == BLACK ? white_moves : black_moves;
+            const std::uint64_t empty = ~(black_moves | white_moves);
+
+            std::uint64_t moves = 0;
+
+            for (int direction = 0; direction < 8; ++direction)
+            {
+                std::uint64_t mask = 0;
+                std::uint64_t candidates = player_bits;
+                for (int step = 0; step < 6; ++step)
+                {
+                    if (dirs[direction].shift > 0)
+                    {
+                        candidates = (candidates & dirs[direction].mask) << dirs[direction].shift;
+                    }
+                    else
+                    {
+                        candidates = (candidates & dirs[direction].mask) >> -dirs[direction].shift;
+                    }
+                    mask |= candidates & opp_bits;
+                    candidates &= opp_bits;
+                    if (!candidates)
+                    {
+                        break;
+                    }
+                }
+
+                if (dirs[direction].shift > 0)
+                {
+                    mask = (mask & dirs[direction].mask) << dirs[direction].shift;
+                }
+                else
+                {
+                    mask = (mask & dirs[direction].mask) >> -dirs[direction].shift;
+                }
+                moves |= mask & empty;
+            }
+
+            for (int square = 0; square < BOARD_SIZE * BOARD_SIZE; ++square)
+            {
+                if ((moves >> square) & 1ULL)
+                {
+                    valid_moves.emplace(square / BOARD_SIZE, square % BOARD_SIZE);
+                }
+            }
+            return valid_moves;
+        }
+
+        std::vector<std::pair<int, int>> Board::collect_flipped_discs(const Move &move, Disc player) const
+        {
+            if (!is_player(player) || !Board::is_in_bounds(move.row, move.col) || get_square(move.row, move.col) != EMPTY)
+            {
+                return {};
+            }
+
+            const std::uint64_t move_bit = bit_at(move.row, move.col);
+            const std::uint64_t player_bits = player == BLACK ? black_moves : white_moves;
+            const std::uint64_t opp_bits = player == BLACK ? white_moves : black_moves;
+
+            std::uint64_t to_flip = 0;
+
+            for (int direction = 0; direction < 8; ++direction)
+            {
+                std::uint64_t mask = 0;
+                std::uint64_t current = move_bit;
+
+                for (int step = 0; step < 7; ++step)
+                {
+                    if (dirs[direction].shift > 0)
+                    {
+                        current = (current & dirs[direction].mask) << dirs[direction].shift;
+                    }
+                    else
+                    {
+                        current = (current & dirs[direction].mask) >> -dirs[direction].shift;
+                    }
+
+                    if (!current)
+                    {
+                        break;
+                    }
+
+                    if (current & opp_bits)
+                    {
+                        mask |= current;
+                        continue;
+                    }
+
+                    if ((current & player_bits) && mask)
+                    {
+                        to_flip |= mask;
+                    }
+                    break;
+                }
+            }
+
+            if (to_flip == 0)
+            {
+                return {};
+            }
+
+            std::vector<std::pair<int, int>> flipped_discs;
+            flipped_discs.reserve(__builtin_popcountll(to_flip));
+            for (int square = 0; square < BOARD_SIZE * BOARD_SIZE; ++square)
+            {
+                if ((to_flip >> square) & 1ULL)
+                {
+                    flipped_discs.emplace_back(square / BOARD_SIZE, square % BOARD_SIZE);
+                }
+            }
+            return flipped_discs;
+        }
+
+        bool Board::has_valid_moves(Disc player) const
+        {
+            return !generate_valid_moves(player).empty();
+        }
+
+        bool Board::is_valid_move(int r, int c, Disc player) const
+        {
+            if (!Board::is_in_bounds(r, c) || !is_player(player))
+            {
+                return false;
+            }
+            const auto valid_moves = generate_valid_moves(player);
+            return valid_moves.find(Move(r, c)) != valid_moves.end();
+        }
+
+        int Board::compute_valid_moves() const
+        {
+            return static_cast<int>(generate_valid_moves(current_turn).size());
+        }
+
+        int Board::process_move(const Move &move, Disc player)
+        {
+            std::vector<std::pair<int, int>> flipped_discs = move.flipped_discs;
+            if (flipped_discs.empty())
+            {
+                flipped_discs = collect_flipped_discs(move, player);
+            }
+            if (flipped_discs.empty())
+            {
+                return ERR_INVALID_MOVE;
+            }
+
+            const std::uint64_t move_bit = bit_at(move.row, move.col);
+            const std::uint64_t to_flip = mask_for_discs(flipped_discs);
+
+            if (player == BLACK)
+            {
+                black_moves |= move_bit | to_flip;
+                white_moves &= ~to_flip;
+            }
+            else
+            {
+                white_moves |= move_bit | to_flip;
+                black_moves &= ~to_flip;
+            }
+
+            return OK;
+        }
+
+        int Board::undo_move(const Move &move, Disc player)
+        {
+            if (!is_player(player) || !Board::is_in_bounds(move.row, move.col) || move.flipped_discs.empty())
+            {
+                return ERR_INVALID_MOVE;
+            }
+
+            const std::uint64_t move_bit = bit_at(move.row, move.col);
+            const std::uint64_t to_flip = mask_for_discs(move.flipped_discs);
+
+            if (player == BLACK)
+            {
+                black_moves &= ~(move_bit | to_flip);
+                white_moves |= to_flip;
+            }
+            else
+            {
+                white_moves &= ~(move_bit | to_flip);
+                black_moves |= to_flip;
+            }
+
+            return OK;
+        }
+
+        std::vector<Move> Board::get_moves_for_current_state() const
+        {
+            std::vector<Move> moves;
+            const auto valid_moves = generate_valid_moves(current_turn);
+            moves.reserve(valid_moves.size());
+            for (const auto &candidate : valid_moves)
+            {
+                Move move = candidate;
+                move.flipped_discs = collect_flipped_discs(move, current_turn);
+                moves.push_back(std::move(move));
+            }
+
+            std::sort(
+                moves.begin(),
+                moves.end(),
+                [](const Move &lhs, const Move &rhs)
+                {
+                    if (lhs.row != rhs.row)
+                    {
+                        return lhs.row < rhs.row;
+                    }
+                    return lhs.col < rhs.col;
+                });
+            return moves;
         }
     }
-
-    // Place the new disc
-    if (player == BLACK)
-    {
-        black_moves |= move_bit | to_flip;
-        white_moves &= ~to_flip;
-    }
-    else
-    {
-        white_moves |= move_bit | to_flip;
-        black_moves &= ~to_flip;
-    }
-    return OK;
-}
-}
 }

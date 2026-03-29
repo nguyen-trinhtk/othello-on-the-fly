@@ -41,6 +41,13 @@ TEST(BoardState, GetSquareValid)
     EXPECT_EQ(b.get_square(7, 7), EMPTY);
 }
 
+TEST(BoardState, GetSquareOutOfBoundsReturnsEmpty)
+{
+    othello::board::Board b;
+    EXPECT_EQ(b.get_square(-1, 0), EMPTY);
+    EXPECT_EQ(b.get_square(0, 8), EMPTY);
+}
+
 // set_square tests
 TEST(BoardState, SetSquareBlackWhite)
 {
@@ -61,14 +68,13 @@ TEST(BoardState, SetSquareOverwrite)
     EXPECT_EQ(b.get_square(2, 2), WHITE);
 }
 
-// print_square tests
-TEST(BoardState, PrintSquareSymbols)
+TEST(BoardState, SetSquareOutOfBoundsReturnsError)
 {
-
     othello::board::Board b;
-    EXPECT_EQ(b.print_square(BLACK), std::string(BLACK_DISC));
-    EXPECT_EQ(b.print_square(WHITE), std::string(WHITE_DISC));
-    EXPECT_EQ(b.print_square(EMPTY), std::string(EMPTY_SQUARE));
+    EXPECT_EQ(b.set_square(-1, 0, BLACK), ERR_OUT_OF_BOUNDS);
+    EXPECT_EQ(b.set_square(0, 8, WHITE), ERR_OUT_OF_BOUNDS);
+    EXPECT_EQ(b.get_black_count(), 2);
+    EXPECT_EQ(b.get_white_count(), 2);
 }
 
 // get_black_count, get_white_count tests

@@ -1,53 +1,76 @@
-
 #ifndef BOARD_H
 #define BOARD_H
 
-#include <iostream>
-#include <string>
 #include <cstdint>
-#include <vector>
-#include <cstdlib>
-#include <algorithm>
+#include <cstddef>
 #include <unordered_set>
+#include <utility>
+#include <vector>
 
 #include "constants.hpp"
-
-using namespace std;
 
 namespace othello
 {
     namespace board
     {
 
-        // Hash function for pair<int, int>
-        struct pair_hash
+        struct Move
         {
-            size_t operator()(const pair<int, int> &p) const
+            int row;
+            int col;
+            std::vector<std::pair<int, int>> flipped_discs;
+
+            Move() noexcept
+                : row(-1), col(-1) {}
+            Move(int r, int c) noexcept
+                : row(r), col(c) {}
+
+            [[nodiscard]] bool operator==(const Move &other) const noexcept
             {
-                return hash<int>()(p.first) ^ (hash<int>()(p.second) << 1);
+                return row == other.row && col == other.col;
+            }
+        };
+
+        // Hash function for Move
+        struct MoveHash
+        {
+            [[nodiscard]] std::size_t operator()(const Move &m) const noexcept
+            {
+                return std::hash<int>()(m.row) ^ (std::hash<int>()(m.col) << 1);
             }
         };
 
         class Board
         {
         private:
-            uint64_t white_moves;
-            uint64_t black_moves;
+            std::uint64_t white_moves;
+            std::uint64_t black_moves;
 
-            int current_turn;
-            unordered_set<std::pair<int, int>, pair_hash> valid_moves; // Faster lookup
+            Disc current_turn;
 
             // Zobrist table for hashing
-            static uint64_t zobrist_table[8][8][2]; // 8x8 board, 2 players
+            static std::uint64_t zobrist_table[8][8][2]; // 8x8 board, 2 players
+            static void init_zobrist();
 
+            [[nodiscard]] static constexpr bool is_in_bounds(int r, int c) noexcept
+            {
+                return r >= 0 && r < BOARD_SIZE && c >= 0 && c < BOARD_SIZE;
+            }
+
+            [[nodiscard]] std::unordered_set<Move, MoveHash> generate_valid_moves(Disc player) const;
+            [[nodiscard]] std::vector<std::pair<int, int>> collect_flipped_discs(const Move &move, Disc player) const;
         public:
             Board();
 
             // Board operations
-            inline int get_square(int r, int c) const
+            [[nodiscard]] inline Disc get_square(int r, int c) const
             {
-                bool black = (black_moves >> (8 * r + c)) & 1;
-                bool white = (white_moves >> (8 * r + c)) & 1;
+                if (!is_in_bounds(r, c))
+                {
+                    return EMPTY;
+                }
+                const bool black = (black_moves >> (8 * r + c)) & 1;
+                const bool white = (white_moves >> (8 * r + c)) & 1;
                 if (black)
                 {
                     return BLACK;
@@ -57,113 +80,89 @@ namespace othello
                     return WHITE;
                 }
                 else
+                {
                     return EMPTY;
-            }
-
-            inline string print_square(int disc)
-            {
-                if (disc == BLACK)
-                    return BLACK_DISC;
-                else if (disc == WHITE)
-                    return WHITE_DISC;
-                else if (disc == EMPTY)
-                    return EMPTY_SQUARE;
-                else
-                {
-                    cerr << MSG_ERR_INVALID_DISC << endl;
-                    return INVALID_SQUARE;
                 }
             }
 
-            inline int set_square(int r, int c, int disc)
+            inline int set_square(int r, int c, Disc disc)
             {
+                if (!is_in_bounds(r, c))
+                {
+                    return ERR_OUT_OF_BOUNDS;
+                }
+                const std::uint64_t bit = 1ULL << (8 * r + c);
                 if (disc == BLACK)
                 {
-                    black_moves |= (1ULL << (8 * r + c));
-                    white_moves &= ~(1ULL << (8 * r + c));
+                    black_moves |= bit;
+                    white_moves &= ~bit;
                 }
                 else if (disc == WHITE)
                 {
-                    white_moves |= (1ULL << (8 * r + c));
-                    black_moves &= ~(1ULL << (8 * r + c));
+                    white_moves |= bit;
+                    black_moves &= ~bit;
                 }
                 else if (disc == EMPTY)
                 {
-                    black_moves &= ~(1ULL << (8 * r + c));
-                    white_moves &= ~(1ULL << (8 * r + c));
+                    black_moves &= ~bit;
+                    white_moves &= ~bit;
                 }
                 else
                 {
-                    cerr << MSG_ERR_INVALID_DISC << endl;
                     return ERR_INVALID_DISC;
                 }
                 return OK;
             }
 
             // Evaluate the board: positive if more discs for 'player', negative if fewer
-            inline int evaluate(int player) const
+            [[nodiscard]] inline int evaluate(Disc player) const
             {
                 // Count bits for each player
-                int black_count = __builtin_popcountll(black_moves);
-                int white_count = __builtin_popcountll(white_moves);
+                const int black_count = __builtin_popcountll(black_moves);
+                const int white_count = __builtin_popcountll(white_moves);
                 return player == BLACK ? (black_count - white_count) : (white_count - black_count);
             }
 
             // Getters for disc counts
-            inline int get_black_count() const
+            [[nodiscard]] inline int get_black_count() const
             {
                 return __builtin_popcountll(black_moves);
             }
-            inline int get_white_count() const
+            [[nodiscard]] inline int get_white_count() const
             {
                 return __builtin_popcountll(white_moves);
             }
 
             // Moves
             // Returns true if neither player has valid moves
-            inline bool is_game_over()
+            [[nodiscard]] inline bool is_game_over() const
             {
-                // Save current turn
-                int original_turn = current_turn;
-                // Check for black
-                current_turn = BLACK;
-                int black_moves_count = compute_valid_moves();
-                // Check for white
-                current_turn = WHITE;
-                int white_moves_count = compute_valid_moves();
-                // Restore turn
-                current_turn = original_turn;
-                return black_moves_count == 0 && white_moves_count == 0;
+                return !has_valid_moves(BLACK) && !has_valid_moves(WHITE);
             }
 
-            // Getter for valid_moves
-            inline const unordered_set<std::pair<int, int>, pair_hash> &get_valid_moves() const
+            [[nodiscard]] inline std::unordered_set<Move, MoveHash> get_valid_moves() const
             {
-                return valid_moves;
+                return generate_valid_moves(current_turn);
             }
-            inline int get_current_player()
+            [[nodiscard]] inline Disc get_current_player() const
             {
                 return current_turn;
             }
 
-            inline void set_current_player(int player)
+            inline void set_current_player(Disc player)
             {
                 current_turn = player;
             }
 
-            int compute_valid_moves();
-            bool is_valid_move(int r, int c, int player);
-            int process_move(int r, int c, int player);
-            int print_board();
-            pair<int, int> parse_move(); // Loop for user to enter move
-
-            // Game end
-            void sum_game_stats();
-            ~Board();
+            [[nodiscard]] bool has_valid_moves(Disc player) const;
+            int compute_valid_moves() const;
+            [[nodiscard]] bool is_valid_move(int r, int c, Disc player) const;
+            [[nodiscard]] int process_move(const Move &move, Disc player);
+            [[nodiscard]] int undo_move(const Move &move, Disc player);
+            [[nodiscard]] std::vector<Move> get_moves_for_current_state() const;
 
             // Zobrist hashing
-            uint64_t get_hash() const;
-            static void init_zobrist();
+            [[nodiscard]] std::uint64_t get_hash() const;
         };
 
     } // namespace board

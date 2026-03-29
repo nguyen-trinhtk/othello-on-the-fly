@@ -1,17 +1,17 @@
-
 #include "board/board.hpp"
+
 #include <random>
 
 namespace othello
 {
     namespace board
     {
-        uint64_t Board::zobrist_table[8][8][2];
-        
+        std::uint64_t Board::zobrist_table[8][8][2];
+
         void Board::init_zobrist()
         {
             std::mt19937_64 rng(0xDEADBEEF); // Fixed seed for reproducibility
-            std::uniform_int_distribution<uint64_t> dist;
+            std::uniform_int_distribution<std::uint64_t> dist;
             for (int r = 0; r < 8; ++r)
             {
                 for (int c = 0; c < 8; ++c)
@@ -24,21 +24,27 @@ namespace othello
             }
         }
 
-        uint64_t Board::get_hash() const
+        std::uint64_t Board::get_hash() const
         {
-            uint64_t h = 0;
+            static const bool initialized = []() {
+                Board::init_zobrist();
+                return true;
+            }();
+            (void)initialized;
+
+            std::uint64_t h = 0;
             for (int r = 0; r < 8; ++r)
             {
                 for (int c = 0; c < 8; ++c)
                 {
-                    int sq = get_square(r, c);
+                    const Disc sq = get_square(r, c);
                     if (sq == BLACK)
                     {
-                        h ^= zobrist_table[r][c][0];
+                        h ^= zobrist_table[r][c][to_index(BLACK)];
                     }
                     else if (sq == WHITE)
                     {
-                        h ^= zobrist_table[r][c][1];
+                        h ^= zobrist_table[r][c][to_index(WHITE)];
                     }
                 }
             }
