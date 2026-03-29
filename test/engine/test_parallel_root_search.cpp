@@ -36,6 +36,24 @@ namespace
             EXPECT_EQ(parallel.best_move->col, sequential.best_move->col);
         }
     }
+
+    othello::board::Board make_parallel_eligible_midgame_board()
+    {
+        othello::board::Board board;
+        const std::vector<std::vector<Disc>> state = {
+            {EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY},
+            {EMPTY, EMPTY, EMPTY, BLACK, WHITE, EMPTY, EMPTY, EMPTY},
+            {EMPTY, EMPTY, BLACK, BLACK, WHITE, EMPTY, EMPTY, EMPTY},
+            {EMPTY, BLACK, BLACK, WHITE, WHITE, WHITE, EMPTY, EMPTY},
+            {EMPTY, EMPTY, BLACK, BLACK, WHITE, EMPTY, EMPTY, EMPTY},
+            {EMPTY, EMPTY, WHITE, BLACK, BLACK, EMPTY, EMPTY, EMPTY},
+            {EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY},
+            {EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY},
+        };
+        set_board_state(board, state, BLACK);
+        return board;
+    }
+
 }
 
 TEST(ParallelRootTest, MatchesSequentialOpeningSearch)
@@ -90,15 +108,25 @@ TEST(ParallelRootTest, MatchesSequentialEndgameSearch)
     expect_parallel_matches_sequential(board, options);
 }
 
-TEST(ParallelRootTest, KeepsTieBreakDeterministic)
+TEST(ParallelRootTest, KeepsResultSelectionDeterministicAtParallelDepth)
 {
     othello::board::Board board;
-    board.set_current_player(BLACK);
-    board.compute_valid_moves();
+    const std::vector<std::vector<Disc>> state = {
+        {EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY},
+        {EMPTY, EMPTY, EMPTY, BLACK, WHITE, EMPTY, EMPTY, EMPTY},
+        {EMPTY, EMPTY, BLACK, BLACK, WHITE, EMPTY, EMPTY, EMPTY},
+        {EMPTY, BLACK, BLACK, WHITE, WHITE, WHITE, EMPTY, EMPTY},
+        {EMPTY, EMPTY, BLACK, BLACK, WHITE, EMPTY, EMPTY, EMPTY},
+        {EMPTY, EMPTY, WHITE, BLACK, BLACK, EMPTY, EMPTY, EMPTY},
+        {EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY},
+        {EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY},
+    };
+    set_board_state(board, state, BLACK);
+
+    EXPECT_GE(board.get_moves_for_current_state().size(), 5U);
 
     othello::engine::SearchOptions sequential_options{};
-    sequential_options.max_depth = 1;
-    sequential_options.iterative_deepening = false;
+    sequential_options.max_depth = 5;
 
     othello::engine::SearchOptions parallel_options = sequential_options;
     parallel_options.parallel_root = true;
@@ -108,7 +136,7 @@ TEST(ParallelRootTest, KeepsTieBreakDeterministic)
     EXPECT_TRUE(sequential.completed);
     ASSERT_TRUE(sequential.best_move.has_value());
 
-    for (int attempt = 0; attempt < 64; ++attempt)
+    for (int attempt = 0; attempt < 32; ++attempt)
     {
         const auto parallel = othello::engine::find_best_move(board, parallel_options);
 
@@ -120,38 +148,41 @@ TEST(ParallelRootTest, KeepsTieBreakDeterministic)
     }
 }
 
-TEST(ParallelRootTest, FallsBackToSequentialWhenNodeBudgetIsSet)
+TEST(ParallelRootTest, FallsBackToSequentialWhenZeroNodeBudgetIsSetOnParallelEligibleSearch)
 {
-    othello::board::Board board;
-    board.set_current_player(BLACK);
+    othello::board::Board board = make_parallel_eligible_midgame_board();
+
+    EXPECT_GE(board.get_moves_for_current_state().size(), 5U);
 
     othello::engine::SearchOptions options{};
-    options.max_depth = 4;
+    options.max_depth = 5;
     options.node_limit = 0;
 
     expect_parallel_matches_sequential(board, options, true);
 }
 
-TEST(ParallelRootTest, FallsBackToSequentialWhenTimeBudgetIsSet)
+TEST(ParallelRootTest, FallsBackToSequentialWhenTimeBudgetIsSetOnParallelEligibleSearch)
 {
-    othello::board::Board board;
-    board.set_current_player(BLACK);
+    othello::board::Board board = make_parallel_eligible_midgame_board();
+
+    EXPECT_GE(board.get_moves_for_current_state().size(), 5U);
 
     othello::engine::SearchOptions options{};
-    options.max_depth = 4;
+    options.max_depth = 5;
     options.time_limit = std::chrono::milliseconds(0);
 
     expect_parallel_matches_sequential(board, options, true);
 }
 
-TEST(ParallelRootTest, FallsBackToSequentialWhenPositiveNodeBudgetIsSet)
+TEST(ParallelRootTest, FallsBackToSequentialWhenPositiveNodeBudgetIsSetOnParallelEligibleSearch)
 {
-    othello::board::Board board;
-    board.set_current_player(BLACK);
+    othello::board::Board board = make_parallel_eligible_midgame_board();
+
+    EXPECT_GE(board.get_moves_for_current_state().size(), 5U);
 
     othello::engine::SearchOptions options{};
-    options.max_depth = 4;
-    options.node_limit = 5;
+    options.max_depth = 5;
+    options.node_limit = 64;
 
     expect_parallel_matches_sequential(board, options, true);
 }
@@ -243,6 +274,45 @@ TEST(ParallelRootTest, FallsBackToSequentialWhenRootMoveCountIsBelowParallelThre
     expect_parallel_matches_sequential(board, options, true);
 }
 
+TEST(ParallelRootTest, FallsBackToSequentialWhenConfiguredParallelDepthThresholdIsHigher)
+{
+    othello::board::Board board = make_parallel_eligible_midgame_board();
+
+    EXPECT_GE(board.get_moves_for_current_state().size(), 5U);
+
+    othello::engine::SearchOptions options{};
+    options.max_depth = 5;
+    options.parallel_root_min_depth = 6;
+
+    expect_parallel_matches_sequential(board, options, true);
+}
+
+TEST(ParallelRootTest, FallsBackToSequentialWhenConfiguredParallelMoveThresholdIsHigher)
+{
+    othello::board::Board board = make_parallel_eligible_midgame_board();
+
+    const int root_move_count = static_cast<int>(board.get_moves_for_current_state().size());
+    EXPECT_GE(root_move_count, 5);
+
+    othello::engine::SearchOptions options{};
+    options.max_depth = 5;
+    options.parallel_root_min_moves = root_move_count + 1;
+
+    expect_parallel_matches_sequential(board, options, true);
+}
+
+TEST(ParallelRootTest, MatchesSequentialWhenParallelRootWorkersAreCapped)
+{
+    othello::board::Board board = make_parallel_eligible_midgame_board();
+
+    EXPECT_GE(board.get_moves_for_current_state().size(), 5U);
+
+    othello::engine::SearchOptions options{};
+    options.max_depth = 5;
+    options.parallel_root_max_workers = 1;
+
+    expect_parallel_matches_sequential(board, options);
+}
 TEST(ParallelRootTest, MatchesSequentialRepeatedlyAtParallelDepth)
 {
     othello::board::Board board;
@@ -268,5 +338,3 @@ TEST(ParallelRootTest, MatchesSequentialRepeatedlyAtParallelDepth)
         expect_parallel_matches_sequential(board, options);
     }
 }
-
-

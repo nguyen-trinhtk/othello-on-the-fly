@@ -20,6 +20,9 @@ namespace othello
             std::size_t transposition_table_size = 1u << 20;
             bool iterative_deepening = true;
             bool parallel_root = false;
+            int parallel_root_min_depth = 5;
+            int parallel_root_min_moves = 5;
+            int parallel_root_max_workers = 0;
         };
 
         struct SearchStats

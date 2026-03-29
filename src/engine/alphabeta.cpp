@@ -24,8 +24,6 @@ namespace othello
             constexpr int KILLER_PRIORITY_SECONDARY = 400'000;
             constexpr int EDGE_PRIORITY = 50'000;
             constexpr int X_SQUARE_PENALTY = 25'000;
-            constexpr int MIN_PARALLEL_ROOT_DEPTH = 5;
-            constexpr std::size_t MIN_PARALLEL_ROOT_MOVES = 5;
 
             struct SearchContext
             {
@@ -80,6 +78,58 @@ namespace othello
                 return candidate.move_order < current_best_move_order;
             }
 
+            void accept_root_result(
+                SearchResult &search_result,
+                std::size_t &best_move_order,
+                const RootMoveResult &candidate)
+            {
+                if (root_result_is_better(
+                        search_result.score,
+                        best_move_order,
+                        candidate,
+                        search_result.best_move.has_value()))
+                {
+                    search_result.best_move = candidate.move;
+                    search_result.score = candidate.score;
+                    best_move_order = candidate.move_order;
+                }
+            }
+
+            void merge_parallel_root_result(
+                SearchContext &context,
+                SearchResult &search_result,
+                std::size_t &best_move_order,
+                const RootMoveResult &move_result)
+            {
+                accumulate_stats(context.stats, move_result.stats);
+
+                if (!move_result.completed)
+                {
+                    context.aborted = true;
+                    return;
+                }
+
+                accept_root_result(search_result, best_move_order, move_result);
+            }
+
+            [[nodiscard]] bool parallel_root_preserves_semantics(const SearchOptions &options) noexcept
+            {
+                return !options.time_limit.has_value() &&
+                       !options.node_limit.has_value();
+            }
+
+            [[nodiscard]] int effective_parallel_root_min_depth(const SearchOptions &options) noexcept
+            {
+                return std::max(1, options.parallel_root_min_depth);
+            }
+
+            [[nodiscard]] std::size_t effective_parallel_root_min_moves(const SearchOptions &options) noexcept
+            {
+                return options.parallel_root_min_moves <= 1
+                           ? 1U
+                           : static_cast<std::size_t>(options.parallel_root_min_moves);
+            }
+
             [[nodiscard]] bool can_use_parallel_root(
                 const SearchOptions &options,
                 int depth,
@@ -88,11 +138,13 @@ namespace othello
                 return options.parallel_root &&
                        !options.time_limit.has_value() &&
                        !options.node_limit.has_value() &&
-                       depth >= MIN_PARALLEL_ROOT_DEPTH &&
-                       root_move_count >= MIN_PARALLEL_ROOT_MOVES;
+                       depth >= effective_parallel_root_min_depth(options) &&
+                       root_move_count >= effective_parallel_root_min_moves(options);
             }
 
-            [[nodiscard]] std::size_t parallel_root_worker_count(std::size_t remaining_root_moves) noexcept
+            [[nodiscard]] std::size_t parallel_root_worker_count(
+                const SearchOptions &options,
+                std::size_t remaining_root_moves) noexcept
             {
                 if (remaining_root_moves == 0)
                 {
@@ -102,8 +154,22 @@ namespace othello
                 const unsigned int hardware_threads = std::thread::hardware_concurrency();
                 const std::size_t hardware_limit =
                     hardware_threads == 0 ? 1U : static_cast<std::size_t>(hardware_threads);
+                const std::size_t configured_limit =
+                    options.parallel_root_max_workers <= 0
+                        ? hardware_limit
+                        : static_cast<std::size_t>(options.parallel_root_max_workers);
 
-                return std::min(remaining_root_moves, hardware_limit);
+                return std::min(remaining_root_moves, std::min(hardware_limit, configured_limit));
+            }
+
+            [[nodiscard]] SearchOptions make_parallel_root_worker_options(const SearchOptions &options)
+            {
+                SearchOptions worker_options = options;
+                worker_options.iterative_deepening = false;
+                worker_options.parallel_root = false;
+                worker_options.time_limit.reset();
+                worker_options.node_limit.reset();
+                return worker_options;
             }
 
             [[nodiscard]] int player_index(Disc player) noexcept
@@ -466,7 +532,8 @@ namespace othello
                 std::size_t move_order)
             {
                 othello::board::Board board = root_board;
-                SearchContext worker_context(options);
+                const SearchOptions worker_options = make_parallel_root_worker_options(options);
+                SearchContext worker_context(worker_options);
                 worker_context.transposition_table.new_search();
 
                 RootMoveResult result{};
@@ -507,7 +574,7 @@ namespace othello
                 std::size_t first_parallel_move)
             {
                 const std::size_t remaining_root_moves = moves.size() - first_parallel_move;
-                const std::size_t worker_count = parallel_root_worker_count(remaining_root_moves);
+                const std::size_t worker_count = parallel_root_worker_count(options, remaining_root_moves);
                 if (worker_count == 0)
                 {
                     return;
@@ -597,7 +664,6 @@ namespace othello
                 const bool use_parallel_root = can_use_parallel_root(context.options, depth, moves.size());
 
                 const int beta = ALPHABETA_MAX;
-                const othello::board::Move *best_move = nullptr;
                 std::size_t best_move_order = moves.size();
 
                 if (use_parallel_root)
@@ -635,24 +701,14 @@ namespace othello
                                 move_result.completed = true;
                                 move_result.move_order = 0;
 
-                                if (root_result_is_better(
-                                        result.score,
-                                        best_move_order,
-                                        move_result,
-                                        best_move != nullptr))
-                                {
-                                    result.best_move = move_result.move;
-                                    result.score = move_result.score;
-                                    best_move = &moves[0];
-                                    best_move_order = 0;
-                                }
+                                accept_root_result(result, best_move_order, move_result);
 
                                 alpha = std::max(alpha, move_result.score);
                                 first_parallel_move = 1;
                             }
                         }
                     }
-                    
+
                     if (!context.aborted)
                     {
                         const std::size_t remaining_root_moves = moves.size() - first_parallel_move;
@@ -671,25 +727,7 @@ namespace othello
 
                         for (const RootMoveResult &move_result : parallel_results)
                         {
-                            accumulate_stats(context.stats, move_result.stats);
-
-                            if (!move_result.completed)
-                            {
-                                context.aborted = true;
-                                continue;
-                            }
-
-                            if (root_result_is_better(
-                                    result.score,
-                                    best_move_order,
-                                    move_result,
-                                    best_move != nullptr))
-                            {
-                                result.best_move = move_result.move;
-                                result.score = move_result.score;
-                                best_move = &moves[move_result.move_order];
-                                best_move_order = move_result.move_order;
-                            }
+                            merge_parallel_root_result(context, result, best_move_order, move_result);
                         }
                     }
                 }
@@ -739,30 +777,20 @@ namespace othello
                         move_result.completed = true;
                         move_result.move_order = move_order;
 
-                        if (root_result_is_better(
-                                result.score,
-                                best_move_order,
-                                move_result,
-                                best_move != nullptr))
-                        {
-                            result.best_move = move_result.move;
-                            result.score = move_result.score;
-                            best_move = &moves[move_order];
-                            best_move_order = move_order;
-                        }
+                        accept_root_result(result, best_move_order, move_result);
 
                         alpha = std::max(alpha, move_result.score);
                     }
                 }
 
-                if (!context.aborted && best_move != nullptr)
+                if (!context.aborted && result.best_move.has_value())
                 {
                     context.transposition_table.store(
                         board.get_hash(),
                         result.score,
                         depth,
                         TTEntryType::EXACT,
-                        best_move);
+                        &(*result.best_move));
                 }
 
                 result.completed = !context.aborted;
