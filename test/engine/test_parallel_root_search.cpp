@@ -365,3 +365,20 @@ TEST(ParallelRootTest, MatchesSequentialRepeatedlyAtParallelDepth)
         expect_parallel_matches_sequential(board, options);
     }
 }
+
+TEST(ParallelRootTest, MatchesSequentialWhenParallelRootRunsInMultipleAlphaRefreshBatches)
+{
+    othello::board::Board board = make_parallel_eligible_midgame_board();
+
+    const std::size_t root_move_count = board.get_moves_for_current_state().size();
+    EXPECT_GE(root_move_count, 5U);
+
+    othello::engine::SearchOptions options{};
+    options.max_depth = 5;
+    options.parallel_root_max_workers = 2;
+
+    for (int attempt = 0; attempt < 8; ++attempt)
+    {
+        expect_parallel_matches_sequential(board, options);
+    }
+}

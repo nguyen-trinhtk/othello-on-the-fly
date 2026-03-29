@@ -46,6 +46,10 @@ namespace othello
                 std::size_t move_order = 0;
             };
 
+            [[nodiscard]] std::size_t parallel_root_batch_size(
+                const SearchOptions &options,
+                std::size_t remaining_root_moves) noexcept;
+
             [[nodiscard]] int search_subtree(
                 othello::board::Board &board,
                 int depth,
@@ -55,7 +59,7 @@ namespace othello
                 SearchContext &context,
                 int ply);
 
-            void evaluate_parallel_root_moves(
+            void evaluate_parallel_root_batch(
                 std::vector<RootMoveResult> &results,
                 const othello::board::Board &root_board,
                 const std::vector<othello::board::Move> &moves,
@@ -64,7 +68,28 @@ namespace othello
                 int alpha,
                 int beta,
                 const SearchOptions &options,
-                std::size_t first_parallel_move);
+                std::size_t first_parallel_move,
+                std::size_t batch_size);
+
+            // [[nodiscard]] int search_subtree(
+            //     othello::board::Board &board,
+            //     int depth,
+            //     int alpha,
+            //     int beta,
+            //     Disc perspective_player,
+            //     SearchContext &context,
+            //     int ply);
+
+            // void evaluate_parallel_root_moves(
+            //     std::vector<RootMoveResult> &results,
+            //     const othello::board::Board &root_board,
+            //     const std::vector<othello::board::Move> &moves,
+            //     Disc perspective_player,
+            //     int depth,
+            //     int alpha,
+            //     int beta,
+            //     const SearchOptions &options,
+            //     std::size_t first_parallel_move);
 
         } // namespace detail
     } // namespace engine

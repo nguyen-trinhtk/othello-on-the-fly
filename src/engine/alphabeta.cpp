@@ -1,7 +1,7 @@
 #include <algorithm>
 #include <chrono>
 
-#include "alphabeta_core_internal.hpp"
+#include "engine_internal.hpp"
 
 namespace othello
 {
@@ -555,23 +555,44 @@ namespace othello
 
                     if (!context.aborted)
                     {
-                        const std::size_t remaining_root_moves = moves.size() - first_parallel_move;
-                        std::vector<RootMoveResult> parallel_results(remaining_root_moves);
+                        std::size_t batch_first_move = first_parallel_move;
 
-                        detail::evaluate_parallel_root_moves(
-                            parallel_results,
-                            board,
-                            moves,
-                            perspective_player,
-                            depth,
-                            alpha,
-                            beta,
-                            context.options,
-                            first_parallel_move);
-
-                        for (const RootMoveResult &move_result : parallel_results)
+                        while (!context.aborted && batch_first_move < moves.size())
                         {
-                            merge_parallel_root_result(context, result, best_move_order, move_result);
+                            const std::size_t remaining_root_moves = moves.size() - batch_first_move;
+                            const std::size_t batch_size =
+                                detail::parallel_root_batch_size(context.options, remaining_root_moves);
+                            if (batch_size == 0)
+                            {
+                                break;
+                            }
+
+                            std::vector<RootMoveResult> parallel_results(batch_size);
+
+                            detail::evaluate_parallel_root_batch(
+                                parallel_results,
+                                board,
+                                moves,
+                                perspective_player,
+                                depth,
+                                alpha,
+                                beta,
+                                context.options,
+                                batch_first_move,
+                                batch_size);
+
+                            for (const RootMoveResult &move_result : parallel_results)
+                            {
+                                merge_parallel_root_result(context, result, best_move_order, move_result);
+                                if (context.aborted)
+                                {
+                                    break;
+                                }
+
+                                alpha = std::max(alpha, move_result.score);
+                            }
+
+                            batch_first_move += batch_size;
                         }
                     }
                 }

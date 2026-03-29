@@ -5,7 +5,7 @@
 #include <thread>
 #include <utility>
 
-#include "alphabeta_core_internal.hpp"
+#include "engine_internal.hpp"
 
 namespace othello
 {
@@ -13,28 +13,28 @@ namespace othello
     {
         namespace detail
         {
-            namespace
+            [[nodiscard]] std::size_t parallel_root_batch_size(
+                const SearchOptions &options,
+                std::size_t remaining_root_moves) noexcept
             {
-                [[nodiscard]] std::size_t parallel_root_worker_count(
-                    const SearchOptions &options,
-                    std::size_t remaining_root_moves) noexcept
+                if (remaining_root_moves == 0)
                 {
-                    if (remaining_root_moves == 0)
-                    {
-                        return 0;
-                    }
-
-                    const unsigned int hardware_threads = std::thread::hardware_concurrency();
-                    const std::size_t hardware_limit =
-                        hardware_threads == 0 ? 1U : static_cast<std::size_t>(hardware_threads);
-                    const std::size_t configured_limit =
-                        options.parallel_root_max_workers <= 0
-                            ? hardware_limit
-                            : static_cast<std::size_t>(options.parallel_root_max_workers);
-
-                    return std::min(remaining_root_moves, std::min(hardware_limit, configured_limit));
+                    return 0;
                 }
 
+                const unsigned int hardware_threads = std::thread::hardware_concurrency();
+                const std::size_t hardware_limit =
+                    hardware_threads == 0 ? 1U : static_cast<std::size_t>(hardware_threads);
+                const std::size_t configured_limit =
+                    options.parallel_root_max_workers <= 0
+                        ? hardware_limit
+                        : static_cast<std::size_t>(options.parallel_root_max_workers);
+
+                return std::min(remaining_root_moves, std::min(hardware_limit, configured_limit));
+            }
+
+            namespace
+            {
                 [[nodiscard]] SearchOptions make_parallel_root_worker_options(const SearchOptions &options)
                 {
                     SearchOptions worker_options = options;
@@ -150,6 +150,7 @@ namespace othello
                         int alpha,
                         int beta,
                         std::size_t first_parallel_move,
+                        std::size_t batch_size,
                         std::size_t worker_count)
                     {
                         if (worker_count == 0)
@@ -170,7 +171,7 @@ namespace othello
                         batch_alpha_ = alpha;
                         batch_beta_ = beta;
                         batch_first_parallel_move_ = first_parallel_move;
-                        batch_remaining_root_moves_ = moves.size() - first_parallel_move;
+                        batch_remaining_root_moves_ = batch_size;
                         batch_active_workers_ = worker_count;
                         batch_finished_workers_ = 0;
                         batch_in_flight_ = true;
@@ -276,7 +277,7 @@ namespace othello
                 }
             } // namespace
 
-            void evaluate_parallel_root_moves(
+            void evaluate_parallel_root_batch(
                 std::vector<RootMoveResult> &results,
                 const othello::board::Board &root_board,
                 const std::vector<othello::board::Move> &moves,
@@ -285,11 +286,11 @@ namespace othello
                 int alpha,
                 int beta,
                 const SearchOptions &options,
-                std::size_t first_parallel_move)
+                std::size_t first_parallel_move,
+                std::size_t batch_size)
             {
-                const std::size_t remaining_root_moves = moves.size() - first_parallel_move;
-                const std::size_t worker_count = parallel_root_worker_count(options, remaining_root_moves);
-                if (worker_count == 0)
+                const std::size_t worker_count = parallel_root_batch_size(options, batch_size);
+                if (worker_count == 0 || batch_size == 0)
                 {
                     return;
                 }
@@ -311,9 +312,9 @@ namespace othello
                     alpha,
                     beta,
                     first_parallel_move,
+                    batch_size,
                     worker_count);
             }
-
         } // namespace detail
     } // namespace engine
 } // namespace othello
