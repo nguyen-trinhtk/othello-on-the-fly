@@ -313,6 +313,39 @@ TEST(ParallelRootTest, MatchesSequentialWhenParallelRootWorkersAreCapped)
 
     expect_parallel_matches_sequential(board, options);
 }
+
+TEST(ParallelRootTest, MatchesSequentialRepeatedlyWhenOneWorkerReusesState)
+{
+    othello::board::Board board = make_parallel_eligible_midgame_board();
+
+    EXPECT_GE(board.get_moves_for_current_state().size(), 5U);
+
+    othello::engine::SearchOptions options{};
+    options.max_depth = 5;
+    options.parallel_root_max_workers = 1;
+
+    for (int attempt = 0; attempt < 16; ++attempt)
+    {
+        expect_parallel_matches_sequential(board, options);
+    }
+}
+
+TEST(ParallelRootTest, MatchesSequentialRepeatedlyWhenThreadPoolWorkersPersist)
+{
+    othello::board::Board board = make_parallel_eligible_midgame_board();
+
+    EXPECT_GE(board.get_moves_for_current_state().size(), 5U);
+
+    othello::engine::SearchOptions options{};
+    options.max_depth = 5;
+    options.parallel_root_max_workers = 2;
+
+    for (int attempt = 0; attempt < 16; ++attempt)
+    {
+        expect_parallel_matches_sequential(board, options);
+    }
+}
+
 TEST(ParallelRootTest, MatchesSequentialRepeatedlyAtParallelDepth)
 {
     othello::board::Board board;
