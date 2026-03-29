@@ -1,15 +1,7 @@
 #include <algorithm>
-#include <array>
-#include <atomic>
 #include <chrono>
-#include <condition_variable>
-#include <functional>
-#include <mutex>
-#include <thread>
-#include <utility>
 
-#include "engine/alphabeta.hpp"
-#include "engine/trans_table.hpp"
+#include "alphabeta_core_internal.hpp"
 
 namespace othello
 {
@@ -17,42 +9,17 @@ namespace othello
     {
         namespace
         {
-            using Clock = std::chrono::steady_clock;
+            using detail::Clock;
+            using detail::MAX_SEARCH_PLY;
+            using detail::RootMoveResult;
+            using detail::SearchContext;
 
-            constexpr int MAX_SEARCH_PLY = BOARD_SIZE * BOARD_SIZE;
             constexpr int TT_MOVE_PRIORITY = 2'000'000;
             constexpr int CORNER_PRIORITY = 1'000'000;
             constexpr int KILLER_PRIORITY_PRIMARY = 500'000;
             constexpr int KILLER_PRIORITY_SECONDARY = 400'000;
             constexpr int EDGE_PRIORITY = 50'000;
             constexpr int X_SQUARE_PENALTY = 25'000;
-
-            struct SearchContext
-            {
-                explicit SearchContext(const SearchOptions &search_options)
-                    : options(search_options),
-                      transposition_table(search_options.transposition_table_size),
-                      start_time(Clock::now())
-                {
-                }
-
-                SearchOptions options;
-                SearchStats stats{};
-                TranspositionTable transposition_table;
-                Clock::time_point start_time;
-                bool aborted = false;
-                std::array<std::array<TTMove, 2>, MAX_SEARCH_PLY> killer_moves{};
-                std::array<std::array<int, BOARD_SIZE * BOARD_SIZE>, 2> history_scores{};
-            };
-
-            struct RootMoveResult
-            {
-                othello::board::Move move;
-                int score = ALPHABETA_MIN;
-                SearchStats stats{};
-                bool completed = true;
-                std::size_t move_order = 0;
-            };
 
             void accumulate_stats(SearchStats &dst, const SearchStats &src)
             {
@@ -142,62 +109,6 @@ namespace othello
                        !options.node_limit.has_value() &&
                        depth >= effective_parallel_root_min_depth(options) &&
                        root_move_count >= effective_parallel_root_min_moves(options);
-            }
-
-            [[nodiscard]] std::size_t parallel_root_worker_count(
-                const SearchOptions &options,
-                std::size_t remaining_root_moves) noexcept
-            {
-                if (remaining_root_moves == 0)
-                {
-                    return 0;
-                }
-
-                const unsigned int hardware_threads = std::thread::hardware_concurrency();
-                const std::size_t hardware_limit =
-                    hardware_threads == 0 ? 1U : static_cast<std::size_t>(hardware_threads);
-                const std::size_t configured_limit =
-                    options.parallel_root_max_workers <= 0
-                        ? hardware_limit
-                        : static_cast<std::size_t>(options.parallel_root_max_workers);
-
-                return std::min(remaining_root_moves, std::min(hardware_limit, configured_limit));
-            }
-
-            [[nodiscard]] SearchOptions make_parallel_root_worker_options(const SearchOptions &options)
-            {
-                SearchOptions worker_options = options;
-                worker_options.iterative_deepening = false;
-                worker_options.parallel_root = false;
-                worker_options.time_limit.reset();
-                worker_options.node_limit.reset();
-                return worker_options;
-            }
-
-            struct ParallelRootWorkerState
-            {
-                explicit ParallelRootWorkerState(const SearchOptions &search_options)
-                    : options(make_parallel_root_worker_options(search_options)),
-                      context(options)
-                {
-                }
-
-                SearchOptions options;
-                SearchContext context;
-                othello::board::Board board{};
-            };
-
-            void reset_parallel_root_worker_state(
-                ParallelRootWorkerState &worker,
-                const othello::board::Board &root_board)
-            {
-                worker.board = root_board;
-                worker.context.stats = {};
-                worker.context.start_time = Clock::now();
-                worker.context.aborted = false;
-                worker.context.killer_moves = {};
-                worker.context.history_scores = {};
-                worker.context.transposition_table.new_search();
             }
 
             [[nodiscard]] int player_index(Disc player) noexcept
@@ -375,7 +286,7 @@ namespace othello
                     });
             }
 
-            int alphabeta_impl(
+            int search_subtree_impl(
                 othello::board::Board &board,
                 int depth,
                 int alpha,
@@ -436,7 +347,7 @@ namespace othello
                     }
 
                     board.set_current_player(opponent(current_player));
-                    const int pass_eval = alphabeta_impl(
+                    const int pass_eval = search_subtree_impl(
                         board,
                         depth,
                         alpha,
@@ -477,7 +388,7 @@ namespace othello
                     }
                     board.set_current_player(opponent(current_player));
 
-                    const int eval = alphabeta_impl(
+                    const int eval = search_subtree_impl(
                         board,
                         depth - 1,
                         alpha,
@@ -549,248 +460,6 @@ namespace othello
                 return board.evaluate(perspective_player);
             }
 
-            [[nodiscard]] RootMoveResult evaluate_root_move_with_worker(
-                ParallelRootWorkerState &worker,
-                const othello::board::Board &root_board,
-                const othello::board::Move &candidate,
-                Disc perspective_player,
-                int depth,
-                int alpha,
-                int beta,
-                std::size_t move_order)
-            {
-                reset_parallel_root_worker_state(worker, root_board);
-
-                RootMoveResult result{};
-                result.move = candidate;
-                result.move_order = move_order;
-
-                if (worker.board.process_move(candidate, perspective_player) != OK)
-                {
-                    result.score = worker.board.evaluate(perspective_player);
-                    result.completed = false;
-                    return result;
-                }
-
-                worker.board.set_current_player(opponent(perspective_player));
-                result.score = alphabeta_impl(
-                    worker.board,
-                    std::max(0, depth - 1),
-                    alpha,
-                    beta,
-                    perspective_player,
-                    worker.context,
-                    1);
-
-                result.stats = worker.context.stats;
-                result.completed = !worker.context.aborted;
-                return result;
-            }
-
-            class ParallelRootThreadPool
-            {
-            public:
-                ParallelRootThreadPool()
-                {
-                    const unsigned int hardware_threads = std::thread::hardware_concurrency();
-                    const std::size_t pool_size =
-                        hardware_threads == 0 ? 1U : static_cast<std::size_t>(hardware_threads);
-
-                    workers_.reserve(pool_size);
-                    for (std::size_t worker_index = 0; worker_index < pool_size; ++worker_index)
-                    {
-                        workers_.emplace_back([this, worker_index]()
-                                              { worker_loop(worker_index); });
-                    }
-                }
-
-                ~ParallelRootThreadPool()
-                {
-                    {
-                        std::lock_guard<std::mutex> lock(mutex_);
-                        stopping_ = true;
-                    }
-                    work_available_.notify_all();
-
-                    for (auto &worker : workers_)
-                    {
-                        worker.join();
-                    }
-                }
-
-                void run_batch(
-                    std::vector<RootMoveResult> &results,
-                    const othello::board::Board &root_board,
-                    const std::vector<othello::board::Move> &moves,
-                    std::vector<ParallelRootWorkerState> &worker_states,
-                    Disc perspective_player,
-                    int depth,
-                    int alpha,
-                    int beta,
-                    std::size_t first_parallel_move,
-                    std::size_t worker_count)
-                {
-                    if (worker_count == 0)
-                    {
-                        return;
-                    }
-
-                    std::unique_lock<std::mutex> lock(mutex_);
-                    batch_finished_.wait(lock, [this]()
-                                         { return !batch_in_flight_; });
-
-                    batch_results_ = &results;
-                    batch_root_board_ = &root_board;
-                    batch_moves_ = &moves;
-                    batch_worker_states_ = &worker_states;
-                    batch_perspective_player_ = perspective_player;
-                    batch_depth_ = depth;
-                    batch_alpha_ = alpha;
-                    batch_beta_ = beta;
-                    batch_first_parallel_move_ = first_parallel_move;
-                    batch_remaining_root_moves_ = moves.size() - first_parallel_move;
-                    batch_active_workers_ = worker_count;
-                    batch_finished_workers_ = 0;
-                    batch_in_flight_ = true;
-                    next_work_item_.store(0, std::memory_order_relaxed);
-                    ++batch_generation_;
-
-                    lock.unlock();
-                    work_available_.notify_all();
-
-                    lock.lock();
-                    batch_finished_.wait(lock, [this]()
-                                         { return !batch_in_flight_; });
-                }
-
-            private:
-                void worker_loop(std::size_t worker_index)
-                {
-                    std::size_t observed_generation = 0;
-
-                    while (true)
-                    {
-                        std::size_t generation = 0;
-                        {
-                            std::unique_lock<std::mutex> lock(mutex_);
-                            work_available_.wait(lock, [this, observed_generation]()
-                                                 { return stopping_ || batch_generation_ != observed_generation; });
-
-                            if (stopping_)
-                            {
-                                return;
-                            }
-
-                            generation = batch_generation_;
-                            if (worker_index >= batch_active_workers_)
-                            {
-                                observed_generation = generation;
-                                continue;
-                            }
-                        }
-
-                        while (true)
-                        {
-                            const std::size_t work_item =
-                                next_work_item_.fetch_add(1, std::memory_order_relaxed);
-                            if (work_item >= batch_remaining_root_moves_)
-                            {
-                                break;
-                            }
-
-                            const std::size_t move_order = batch_first_parallel_move_ + work_item;
-                            (*batch_results_)[work_item] = evaluate_root_move_with_worker(
-                                (*batch_worker_states_)[worker_index],
-                                *batch_root_board_,
-                                (*batch_moves_)[move_order],
-                                batch_perspective_player_,
-                                batch_depth_,
-                                batch_alpha_,
-                                batch_beta_,
-                                move_order);
-                        }
-
-                        {
-                            std::lock_guard<std::mutex> lock(mutex_);
-                            observed_generation = generation;
-                            ++batch_finished_workers_;
-                            if (batch_finished_workers_ == batch_active_workers_)
-                            {
-                                batch_in_flight_ = false;
-                                batch_finished_.notify_one();
-                            }
-                        }
-                    }
-                }
-
-                std::mutex mutex_;
-                std::condition_variable work_available_;
-                std::condition_variable batch_finished_;
-                bool stopping_ = false;
-
-                std::vector<RootMoveResult> *batch_results_ = nullptr;
-                const othello::board::Board *batch_root_board_ = nullptr;
-                const std::vector<othello::board::Move> *batch_moves_ = nullptr;
-                std::vector<ParallelRootWorkerState> *batch_worker_states_ = nullptr;
-                Disc batch_perspective_player_ = EMPTY;
-                int batch_depth_ = 0;
-                int batch_alpha_ = ALPHABETA_MIN;
-                int batch_beta_ = ALPHABETA_MAX;
-                std::size_t batch_first_parallel_move_ = 0;
-                std::size_t batch_remaining_root_moves_ = 0;
-                std::size_t batch_active_workers_ = 0;
-                std::size_t batch_finished_workers_ = 0;
-                std::size_t batch_generation_ = 0;
-                bool batch_in_flight_ = false;
-                std::atomic<std::size_t> next_work_item_{0};
-
-                std::vector<std::thread> workers_;
-            };
-
-            ParallelRootThreadPool &parallel_root_thread_pool()
-            {
-                static ParallelRootThreadPool pool;
-                return pool;
-            }
-
-            void run_parallel_root_workers(
-                std::vector<RootMoveResult> &results,
-                const othello::board::Board &root_board,
-                const std::vector<othello::board::Move> &moves,
-                Disc perspective_player,
-                int depth,
-                int alpha,
-                int beta,
-                const SearchOptions &options,
-                std::size_t first_parallel_move)
-            {
-                const std::size_t remaining_root_moves = moves.size() - first_parallel_move;
-                const std::size_t worker_count = parallel_root_worker_count(options, remaining_root_moves);
-                if (worker_count == 0)
-                {
-                    return;
-                }
-
-                std::vector<ParallelRootWorkerState> worker_states;
-                worker_states.reserve(worker_count);
-                for (std::size_t worker = 0; worker < worker_count; ++worker)
-                {
-                    worker_states.emplace_back(options);
-                }
-
-                parallel_root_thread_pool().run_batch(
-                    results,
-                    root_board,
-                    moves,
-                    worker_states,
-                    perspective_player,
-                    depth,
-                    alpha,
-                    beta,
-                    first_parallel_move,
-                    worker_count);
-            }
-
             SearchResult search_at_depth(
                 othello::board::Board &board,
                 int depth,
@@ -810,7 +479,7 @@ namespace othello
                 auto moves = board.get_moves_for_current_state();
                 if (moves.empty())
                 {
-                    result.score = alphabeta_impl(
+                    result.score = search_subtree_impl(
                         board,
                         depth,
                         ALPHABETA_MIN,
@@ -853,7 +522,7 @@ namespace othello
                         {
                             board.set_current_player(opponent(perspective_player));
 
-                            const int eval = alphabeta_impl(
+                            const int eval = search_subtree_impl(
                                 board,
                                 std::max(0, depth - 1),
                                 alpha,
@@ -889,7 +558,7 @@ namespace othello
                         const std::size_t remaining_root_moves = moves.size() - first_parallel_move;
                         std::vector<RootMoveResult> parallel_results(remaining_root_moves);
 
-                        run_parallel_root_workers(
+                        detail::evaluate_parallel_root_moves(
                             parallel_results,
                             board,
                             moves,
@@ -924,7 +593,7 @@ namespace othello
                         }
                         board.set_current_player(opponent(perspective_player));
 
-                        const int eval = alphabeta_impl(
+                        const int eval = search_subtree_impl(
                             board,
                             std::max(0, depth - 1),
                             alpha,
@@ -1021,15 +690,34 @@ namespace othello
 
         } // namespace
 
+        int detail::search_subtree(
+            othello::board::Board &board,
+            int depth,
+            int alpha,
+            int beta,
+            Disc perspective_player,
+            detail::SearchContext &context,
+            int ply)
+        {
+            return search_subtree_impl(
+                board,
+                depth,
+                alpha,
+                beta,
+                perspective_player,
+                context,
+                ply);
+        }
+
         int alphabeta(othello::board::Board board, int depth, int alpha, int beta, Disc perspective_player)
         {
             SearchOptions options{};
             options.max_depth = depth;
             options.iterative_deepening = false;
 
-            SearchContext context(options);
+            detail::SearchContext context(options);
             context.transposition_table.new_search();
-            return alphabeta_impl(
+            return detail::search_subtree(
                 board,
                 depth,
                 alpha,

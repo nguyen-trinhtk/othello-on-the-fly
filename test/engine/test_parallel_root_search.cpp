@@ -187,28 +187,22 @@ TEST(ParallelRootTest, FallsBackToSequentialWhenPositiveNodeBudgetIsSetOnParalle
     expect_parallel_matches_sequential(board, options, true);
 }
 
-TEST(ParallelRootTest, MatchesSequentialAcrossDepthsOnMidgameBoard)
+TEST(ParallelRootTest, MatchesSequentialAcrossParallelRootWorkerCaps)
 {
-    othello::board::Board midgame;
-    const std::vector<std::vector<Disc>> midgame_state = {
-        {EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY},
-        {EMPTY, EMPTY, EMPTY, BLACK, WHITE, EMPTY, EMPTY, EMPTY},
-        {EMPTY, EMPTY, BLACK, BLACK, WHITE, EMPTY, EMPTY, EMPTY},
-        {EMPTY, BLACK, BLACK, WHITE, WHITE, WHITE, EMPTY, EMPTY},
-        {EMPTY, EMPTY, BLACK, BLACK, WHITE, EMPTY, EMPTY, EMPTY},
-        {EMPTY, EMPTY, WHITE, BLACK, BLACK, EMPTY, EMPTY, EMPTY},
-        {EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY},
-        {EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY},
-    };
-    set_board_state(midgame, midgame_state, BLACK);
+    othello::board::Board board = make_parallel_eligible_midgame_board();
 
-    const std::array<int, 3> depths = {1, 3, 5};
-    for (const int depth : depths)
+    EXPECT_GE(board.get_moves_for_current_state().size(), 5U);
+
+    const std::array<int, 5> worker_caps = {0, 1, 2, 3, 4};
+    for (const int worker_cap : worker_caps)
     {
-        othello::engine::SearchOptions options{};
-        options.max_depth = depth;
+        SCOPED_TRACE(::testing::Message() << "worker_cap=" << worker_cap);
 
-        expect_parallel_matches_sequential(midgame, options);
+        othello::engine::SearchOptions options{};
+        options.max_depth = 5;
+        options.parallel_root_max_workers = worker_cap;
+
+        expect_parallel_matches_sequential(board, options);
     }
 }
 

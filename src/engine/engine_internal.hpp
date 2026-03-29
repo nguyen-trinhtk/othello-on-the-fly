@@ -1,0 +1,73 @@
+#ifndef ALPHABETA_INTERNAL_HPP
+#define ALPHABETA_INTERNAL_HPP
+
+#include <array>
+#include <chrono>
+#include <cstddef>
+#include <vector>
+
+#include "engine/alphabeta.hpp"
+#include "engine/trans_table.hpp"
+
+namespace othello
+{
+    namespace engine
+    {
+        namespace detail
+        {
+            using Clock = std::chrono::steady_clock;
+
+            inline constexpr int MAX_SEARCH_PLY = BOARD_SIZE * BOARD_SIZE;
+
+            struct SearchContext
+            {
+                explicit SearchContext(const SearchOptions &search_options)
+                    : options(search_options),
+                      transposition_table(search_options.transposition_table_size),
+                      start_time(Clock::now())
+                {
+                }
+
+                SearchOptions options;
+                SearchStats stats{};
+                TranspositionTable transposition_table;
+                Clock::time_point start_time;
+                bool aborted = false;
+                std::array<std::array<TTMove, 2>, MAX_SEARCH_PLY> killer_moves{};
+                std::array<std::array<int, BOARD_SIZE * BOARD_SIZE>, 2> history_scores{};
+            };
+
+            struct RootMoveResult
+            {
+                othello::board::Move move;
+                int score = ALPHABETA_MIN;
+                SearchStats stats{};
+                bool completed = true;
+                std::size_t move_order = 0;
+            };
+
+            [[nodiscard]] int search_subtree(
+                othello::board::Board &board,
+                int depth,
+                int alpha,
+                int beta,
+                Disc perspective_player,
+                SearchContext &context,
+                int ply);
+
+            void evaluate_parallel_root_moves(
+                std::vector<RootMoveResult> &results,
+                const othello::board::Board &root_board,
+                const std::vector<othello::board::Move> &moves,
+                Disc perspective_player,
+                int depth,
+                int alpha,
+                int beta,
+                const SearchOptions &options,
+                std::size_t first_parallel_move);
+
+        } // namespace detail
+    } // namespace engine
+} // namespace othello
+
+#endif
