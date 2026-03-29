@@ -376,9 +376,67 @@ TEST(ParallelRootTest, MatchesSequentialWhenParallelRootRunsInMultipleAlphaRefre
     othello::engine::SearchOptions options{};
     options.max_depth = 5;
     options.parallel_root_max_workers = 2;
+    options.parallel_root_batch_scale = 1;
 
     for (int attempt = 0; attempt < 8; ++attempt)
     {
         expect_parallel_matches_sequential(board, options);
     }
 }
+
+TEST(ParallelRootTest, MatchesSequentialWhenPoolWorkerStateIsReusedAcrossWorkerCaps)
+{
+    othello::board::Board board = make_parallel_eligible_midgame_board();
+
+    EXPECT_GE(board.get_moves_for_current_state().size(), 5U);
+
+    const std::array<int, 6> worker_caps = {4, 2, 1, 4, 3, 2};
+    for (const int worker_cap : worker_caps)
+    {
+        SCOPED_TRACE(::testing::Message() << "worker_cap=" << worker_cap);
+
+        othello::engine::SearchOptions options{};
+        options.max_depth = 5;
+        options.parallel_root_max_workers = worker_cap;
+
+        expect_parallel_matches_sequential(board, options);
+    }
+}
+
+TEST(ParallelRootTest, MatchesSequentialWhenPoolWorkerStateRebuildsForDifferentTTSizes)
+{
+    othello::board::Board board = make_parallel_eligible_midgame_board();
+
+    EXPECT_GE(board.get_moves_for_current_state().size(), 5U);
+
+    const std::array<std::size_t, 3> tt_sizes = {1u << 12, 1u << 14, 1u << 12};
+    for (const std::size_t tt_size : tt_sizes)
+    {
+        SCOPED_TRACE(::testing::Message() << "tt_size=" << tt_size);
+
+        othello::engine::SearchOptions options{};
+        options.max_depth = 5;
+        options.parallel_root_max_workers = 2;
+        options.transposition_table_size = tt_size;
+
+        expect_parallel_matches_sequential(board, options);
+    }
+}
+
+TEST(ParallelRootTest, MatchesSequentialWhenParallelRootUsesCoarserBatches)
+{
+    othello::board::Board board = make_parallel_eligible_midgame_board();
+
+    EXPECT_GE(board.get_moves_for_current_state().size(), 5U);
+
+    othello::engine::SearchOptions options{};
+    options.max_depth = 5;
+    options.parallel_root_max_workers = 2;
+    options.parallel_root_batch_scale = 2;
+
+    for (int attempt = 0; attempt < 8; ++attempt)
+    {
+        expect_parallel_matches_sequential(board, options);
+    }
+}
+

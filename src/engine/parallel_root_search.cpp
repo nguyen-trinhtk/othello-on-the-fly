@@ -13,7 +13,7 @@ namespace othello
     {
         namespace detail
         {
-            [[nodiscard]] std::size_t parallel_root_batch_size(
+            [[nodiscard]] std::size_t parallel_root_worker_count(
                 const SearchOptions &options,
                 std::size_t remaining_root_moves) noexcept
             {
@@ -33,6 +33,25 @@ namespace othello
                 return std::min(remaining_root_moves, std::min(hardware_limit, configured_limit));
             }
 
+            [[nodiscard]] std::size_t parallel_root_batch_size(
+                const SearchOptions &options,
+                std::size_t remaining_root_moves) noexcept
+            {
+                const std::size_t worker_count =
+                    parallel_root_worker_count(options, remaining_root_moves);
+                if (worker_count == 0)
+                {
+                    return 0;
+                }
+
+                const std::size_t batch_scale =
+                    options.parallel_root_batch_scale <= 1
+                        ? 1U
+                        : static_cast<std::size_t>(options.parallel_root_batch_scale);
+
+                return std::min(remaining_root_moves, worker_count * batch_scale);
+            }
+
             namespace
             {
                 [[nodiscard]] SearchOptions make_parallel_root_worker_options(const SearchOptions &options)
@@ -43,6 +62,19 @@ namespace othello
                     worker_options.time_limit.reset();
                     worker_options.node_limit.reset();
                     return worker_options;
+                }
+
+                struct ParallelRootWorkerConfig
+                {
+                    std::size_t transposition_table_size = 0;
+                };
+
+                [[nodiscard]] ParallelRootWorkerConfig make_parallel_root_worker_config(
+                    const SearchOptions &options) noexcept
+                {
+                    return {
+                        options.transposition_table_size,
+                    };
                 }
 
                 struct ParallelRootWorkerState
@@ -115,11 +147,11 @@ namespace othello
                     ParallelRootThreadPool()
                     {
                         const unsigned int hardware_threads = std::thread::hardware_concurrency();
-                        const std::size_t pool_size =
+                        pool_size_ =
                             hardware_threads == 0 ? 1U : static_cast<std::size_t>(hardware_threads);
 
-                        workers_.reserve(pool_size);
-                        for (std::size_t worker_index = 0; worker_index < pool_size; ++worker_index)
+                        workers_.reserve(pool_size_);
+                        for (std::size_t worker_index = 0; worker_index < pool_size_; ++worker_index)
                         {
                             workers_.emplace_back([this, worker_index]()
                                                   { worker_loop(worker_index); });
@@ -144,11 +176,11 @@ namespace othello
                         std::vector<RootMoveResult> &results,
                         const othello::board::Board &root_board,
                         const std::vector<othello::board::Move> &moves,
-                        std::vector<ParallelRootWorkerState> &worker_states,
                         Disc perspective_player,
                         int depth,
                         int alpha,
                         int beta,
+                        const SearchOptions &options,
                         std::size_t first_parallel_move,
                         std::size_t batch_size,
                         std::size_t worker_count)
@@ -162,10 +194,11 @@ namespace othello
                         batch_finished_.wait(lock, [this]()
                                              { return !batch_in_flight_; });
 
+                        ensure_worker_states(options, worker_count);
+
                         batch_results_ = &results;
                         batch_root_board_ = &root_board;
                         batch_moves_ = &moves;
-                        batch_worker_states_ = &worker_states;
                         batch_perspective_player_ = perspective_player;
                         batch_depth_ = depth;
                         batch_alpha_ = alpha;
@@ -187,6 +220,35 @@ namespace othello
                     }
 
                 private:
+                    void ensure_worker_states(
+                        const SearchOptions &options,
+                        std::size_t worker_count)
+                    {
+                        const ParallelRootWorkerConfig worker_config =
+                            make_parallel_root_worker_config(options);
+                        if (!worker_states_initialized_ ||
+                            worker_state_config_.transposition_table_size !=
+                                worker_config.transposition_table_size)
+                        {
+                            worker_states_.clear();
+                            worker_state_config_ = worker_config;
+                            worker_states_initialized_ = true;
+                        }
+
+                        if (worker_states_.size() >= worker_count)
+                        {
+                            return;
+                        }
+
+                        worker_states_.reserve(worker_count);
+                        for (std::size_t worker = worker_states_.size();
+                             worker < worker_count;
+                             ++worker)
+                        {
+                            worker_states_.emplace_back(options);
+                        }
+                    }
+
                     void worker_loop(std::size_t worker_index)
                     {
                         std::size_t observed_generation = 0;
@@ -223,7 +285,7 @@ namespace othello
 
                                 const std::size_t move_order = batch_first_parallel_move_ + work_item;
                                 (*batch_results_)[work_item] = evaluate_root_move_with_worker(
-                                    (*batch_worker_states_)[worker_index],
+                                    worker_states_[worker_index],
                                     *batch_root_board_,
                                     (*batch_moves_)[move_order],
                                     batch_perspective_player_,
@@ -254,7 +316,6 @@ namespace othello
                     std::vector<RootMoveResult> *batch_results_ = nullptr;
                     const othello::board::Board *batch_root_board_ = nullptr;
                     const std::vector<othello::board::Move> *batch_moves_ = nullptr;
-                    std::vector<ParallelRootWorkerState> *batch_worker_states_ = nullptr;
                     Disc batch_perspective_player_ = EMPTY;
                     int batch_depth_ = 0;
                     int batch_alpha_ = ALPHABETA_MIN;
@@ -267,6 +328,10 @@ namespace othello
                     bool batch_in_flight_ = false;
                     std::atomic<std::size_t> next_work_item_{0};
 
+                    std::size_t pool_size_ = 0;
+                    std::vector<ParallelRootWorkerState> worker_states_{};
+                    ParallelRootWorkerConfig worker_state_config_{};
+                    bool worker_states_initialized_ = false;
                     std::vector<std::thread> workers_;
                 };
 
@@ -289,28 +354,21 @@ namespace othello
                 std::size_t first_parallel_move,
                 std::size_t batch_size)
             {
-                const std::size_t worker_count = parallel_root_batch_size(options, batch_size);
+                const std::size_t worker_count = parallel_root_worker_count(options, batch_size);
                 if (worker_count == 0 || batch_size == 0)
                 {
                     return;
-                }
-
-                std::vector<ParallelRootWorkerState> worker_states;
-                worker_states.reserve(worker_count);
-                for (std::size_t worker = 0; worker < worker_count; ++worker)
-                {
-                    worker_states.emplace_back(options);
                 }
 
                 parallel_root_thread_pool().run_batch(
                     results,
                     root_board,
                     moves,
-                    worker_states,
                     perspective_player,
                     depth,
                     alpha,
                     beta,
+                    options,
                     first_parallel_move,
                     batch_size,
                     worker_count);

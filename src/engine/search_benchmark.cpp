@@ -21,6 +21,7 @@ namespace
         int parallel_root_min_depth = 5;
         int parallel_root_min_moves = 5;
         int parallel_root_max_workers = 0;
+        int parallel_root_batch_scale = 2;
     };
     void print_usage(const char *program_name)
     {
@@ -28,7 +29,8 @@ namespace
             << "Usage: " << program_name << " [--depth N] [--repeats N] [--scenario opening|midgame|endgame]\n"
             << "       [--node-limit N] [--time-ms N] [--parallel-root]\n"
             << "       [--parallel-root-min-depth N] [--parallel-root-min-moves N]\n"
-            << "       [--parallel-root-max-workers N]\n";
+            << "       [--parallel-root-max-workers N]\n"
+            << "       [--parallel-root-batch-scale N]\n";
     }
 
     [[nodiscard]] int parse_int_arg(const std::string &value, const char *flag_name)
@@ -172,6 +174,10 @@ namespace
             {
                 config.parallel_root_max_workers = parse_int_arg(value, "--parallel-root-max-workers");
             }
+            else if (arg == "--parallel-root-batch-scale")
+            {
+                config.parallel_root_batch_scale = parse_int_arg(value, "--parallel-root-batch-scale");
+            }
 
             else
             {
@@ -196,6 +202,7 @@ int main(int argc, char **argv)
     options.parallel_root_min_depth = config.parallel_root_min_depth;
     options.parallel_root_min_moves = config.parallel_root_min_moves;
     options.parallel_root_max_workers = config.parallel_root_max_workers;
+    options.parallel_root_batch_scale = config.parallel_root_batch_scale;
 
     std::uint64_t total_nodes = 0;
     std::uint64_t total_tt_hits = 0;
@@ -239,6 +246,7 @@ int main(int argc, char **argv)
         {
             std::cout << config.parallel_root_max_workers << '\n';
         }
+        std::cout << "Parallel root batch scale: " << config.parallel_root_batch_scale << '\n';
     }
 
     if (config.node_limit.has_value())
