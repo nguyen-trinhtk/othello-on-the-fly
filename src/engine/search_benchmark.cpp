@@ -17,13 +17,14 @@ struct BenchmarkConfig
     std::string scenario = "midgame";
     std::optional<std::uint64_t> node_limit{};
     std::optional<std::chrono::milliseconds> time_limit{};
+    bool parallel_root = false;
 };
 
 void print_usage(const char *program_name)
 {
     std::cout
         << "Usage: " << program_name << " [--depth N] [--repeats N] [--scenario opening|midgame|endgame]\n"
-        << "       [--node-limit N] [--time-ms N]\n";
+        << "       [--node-limit N] [--time-ms N] [--parallel-root]\n";
 }
 
 [[nodiscard]] int parse_int_arg(const std::string &value, const char *flag_name)
@@ -122,6 +123,12 @@ void set_board_state(
             std::exit(0);
         }
 
+        if (arg == "--parallel-root")
+        {
+            config.parallel_root = true;
+            continue;
+        }
+
         if (index + 1 >= argc)
         {
             std::cerr << "Missing value for " << arg << '\n';
@@ -168,6 +175,7 @@ int main(int argc, char **argv)
     options.max_depth = config.depth;
     options.node_limit = config.node_limit;
     options.time_limit = config.time_limit;
+    options.parallel_root = config.parallel_root;
 
     std::uint64_t total_nodes = 0;
     std::uint64_t total_tt_hits = 0;
@@ -197,6 +205,7 @@ int main(int argc, char **argv)
     std::cout << "Scenario: " << config.scenario << '\n';
     std::cout << "Depth: " << config.depth << '\n';
     std::cout << "Repeats: " << config.repeats << '\n';
+    std::cout << "Parallel root: " << (config.parallel_root ? "yes" : "no") << '\n';
     if (config.node_limit.has_value())
     {
         std::cout << "Node limit: " << *config.node_limit << '\n';
