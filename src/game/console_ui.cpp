@@ -296,6 +296,11 @@ namespace othello
             out_ << message << '\n';
         }
 
+        void ConsoleUi::show_ai_thinking() const
+        {
+            show_message("AI is thinking...");
+        }
+
         std::optional<board::Move> ConsoleUi::prompt_for_move(const Board &board) const
         {
             show_message(std::string(player_name(board.get_current_player())) + " to move. Enter a square or command:");
