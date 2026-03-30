@@ -28,7 +28,8 @@ namespace othello
                     : options(search_options),
                       transposition_table(search_options.transposition_table_size),
                       start_time(Clock::now())
-                {}
+                {
+                }
 
                 SearchOptions options;
                 SearchStats stats{};
@@ -154,7 +155,7 @@ namespace othello
                 const SearchContext &context,
                 const TTEntry *transposition_entry)
             {
-                int score = static_cast<int>(move.flipped_discs.size());
+                int score = static_cast<int>(move.flip_count());
 
                 if (transposition_entry != nullptr &&
                     transposition_entry->has_best_move() &&

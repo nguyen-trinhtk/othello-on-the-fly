@@ -9,7 +9,9 @@ namespace othello
             : white_moves(INIT_BOARD_WHITE),
               black_moves(INIT_BOARD_BLACK),
               current_turn(BLACK)
-        {}
+        {
+            rebuild_hash();
+        }
 
     } // namespace board
 } // namespace othello

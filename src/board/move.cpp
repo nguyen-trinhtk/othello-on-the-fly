@@ -1,35 +1,14 @@
 #include "board/board.hpp"
 
-#include <algorithm>
-
 namespace othello
 {
     namespace board
     {
-        namespace
+        std::uint64_t Board::generate_valid_move_mask(Disc player) const
         {
-            [[nodiscard]] std::uint64_t bit_at(int row, int col) noexcept
-            {
-                return 1ULL << (BOARD_SIZE * row + col);
-            }
-
-            [[nodiscard]] std::uint64_t mask_for_discs(const std::vector<std::pair<int, int>> &discs) noexcept
-            {
-                std::uint64_t mask = 0;
-                for (const auto &[row, col] : discs)
-                {
-                    mask |= bit_at(row, col);
-                }
-                return mask;
-            }
-        } // namespace
-
-        std::unordered_set<Move, MoveHash> Board::generate_valid_moves(Disc player) const
-        {
-            std::unordered_set<Move, MoveHash> valid_moves;
             if (!is_player(player))
             {
-                return valid_moves;
+                return 0;
             }
 
             const std::uint64_t player_bits = player == BLACK ? black_moves : white_moves;
@@ -71,21 +50,14 @@ namespace othello
                 moves |= mask & empty;
             }
 
-            for (int square = 0; square < BOARD_SIZE * BOARD_SIZE; ++square)
-            {
-                if ((moves >> square) & 1ULL)
-                {
-                    valid_moves.emplace(square / BOARD_SIZE, square % BOARD_SIZE);
-                }
-            }
-            return valid_moves;
+            return moves;
         }
 
-        std::vector<std::pair<int, int>> Board::collect_flipped_discs(const Move &move, Disc player) const
+        std::uint64_t Board::collect_flip_mask(const Move &move, Disc player) const
         {
             if (!is_player(player) || !Board::is_in_bounds(move.row, move.col) || get_square(move.row, move.col) != EMPTY)
             {
-                return {};
+                return 0;
             }
 
             const std::uint64_t move_bit = bit_at(move.row, move.col);
@@ -129,26 +101,12 @@ namespace othello
                 }
             }
 
-            if (to_flip == 0)
-            {
-                return {};
-            }
-
-            std::vector<std::pair<int, int>> flipped_discs;
-            flipped_discs.reserve(__builtin_popcountll(to_flip));
-            for (int square = 0; square < BOARD_SIZE * BOARD_SIZE; ++square)
-            {
-                if ((to_flip >> square) & 1ULL)
-                {
-                    flipped_discs.emplace_back(square / BOARD_SIZE, square % BOARD_SIZE);
-                }
-            }
-            return flipped_discs;
+            return to_flip;
         }
 
         bool Board::has_valid_moves(Disc player) const
         {
-            return !generate_valid_moves(player).empty();
+            return generate_valid_move_mask(player) != 0;
         }
 
         bool Board::is_valid_move(int r, int c, Disc player) const
@@ -157,37 +115,40 @@ namespace othello
             {
                 return false;
             }
-            const auto valid_moves = generate_valid_moves(player);
-            return valid_moves.find(Move(r, c)) != valid_moves.end();
+
+            return (generate_valid_move_mask(player) & bit_at(r, c)) != 0;
         }
 
         int Board::compute_valid_moves() const
         {
-            return static_cast<int>(generate_valid_moves(current_turn).size());
+            return __builtin_popcountll(generate_valid_move_mask(current_turn));
         }
 
         int Board::process_move(const Move &move, Disc player)
         {
-            std::vector<std::pair<int, int>> flipped_discs = move.flipped_discs;
-            if (flipped_discs.empty())
+            std::uint64_t to_flip = move.flip_mask;
+            if (to_flip == 0)
             {
-                flipped_discs = collect_flipped_discs(move, player);
+                to_flip = collect_flip_mask(move, player);
             }
-            if (flipped_discs.empty())
+            if (to_flip == 0)
             {
                 return ERR_INVALID_MOVE;
             }
 
             const std::uint64_t move_bit = bit_at(move.row, move.col);
-            const std::uint64_t to_flip = mask_for_discs(flipped_discs);
 
             if (player == BLACK)
             {
+                xor_square_hash(move.row, move.col, BLACK);
+                transfer_mask_hash(to_flip, WHITE, BLACK);
                 black_moves |= move_bit | to_flip;
                 white_moves &= ~to_flip;
             }
             else
             {
+                xor_square_hash(move.row, move.col, WHITE);
+                transfer_mask_hash(to_flip, BLACK, WHITE);
                 white_moves |= move_bit | to_flip;
                 black_moves &= ~to_flip;
             }
@@ -197,21 +158,25 @@ namespace othello
 
         int Board::undo_move(const Move &move, Disc player)
         {
-            if (!is_player(player) || !Board::is_in_bounds(move.row, move.col) || move.flipped_discs.empty())
+            if (!is_player(player) || !Board::is_in_bounds(move.row, move.col) || move.flip_mask == 0)
             {
                 return ERR_INVALID_MOVE;
             }
 
             const std::uint64_t move_bit = bit_at(move.row, move.col);
-            const std::uint64_t to_flip = mask_for_discs(move.flipped_discs);
+            const std::uint64_t to_flip = move.flip_mask;
 
             if (player == BLACK)
             {
+                xor_square_hash(move.row, move.col, BLACK);
+                transfer_mask_hash(to_flip, BLACK, WHITE);
                 black_moves &= ~(move_bit | to_flip);
                 white_moves |= to_flip;
             }
             else
             {
+                xor_square_hash(move.row, move.col, WHITE);
+                transfer_mask_hash(to_flip, WHITE, BLACK);
                 white_moves &= ~(move_bit | to_flip);
                 black_moves |= to_flip;
             }
@@ -221,27 +186,20 @@ namespace othello
 
         std::vector<Move> Board::get_moves_for_current_state() const
         {
+            std::uint64_t move_mask = generate_valid_move_mask(current_turn);
             std::vector<Move> moves;
-            const auto valid_moves = generate_valid_moves(current_turn);
-            moves.reserve(valid_moves.size());
-            for (const auto &candidate : valid_moves)
+            moves.reserve(__builtin_popcountll(move_mask));
+
+            while (move_mask != 0)
             {
-                Move move = candidate;
-                move.flipped_discs = collect_flipped_discs(move, current_turn);
-                moves.push_back(std::move(move));
+                const int square = __builtin_ctzll(move_mask);
+                move_mask &= (move_mask - 1);
+
+                Move move(square / BOARD_SIZE, square % BOARD_SIZE);
+                move.flip_mask = collect_flip_mask(move, current_turn);
+                moves.push_back(move);
             }
 
-            std::sort(
-                moves.begin(),
-                moves.end(),
-                [](const Move &lhs, const Move &rhs)
-                {
-                    if (lhs.row != rhs.row)
-                    {
-                        return lhs.row < rhs.row;
-                    }
-                    return lhs.col < rhs.col;
-                });
             return moves;
         }
     }

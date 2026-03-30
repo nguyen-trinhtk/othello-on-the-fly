@@ -4,25 +4,35 @@
 
 namespace
 {
-othello::board::Move make_move(int row, int col)
-{
-    return othello::board::Move(row, col);
-}
-
-const othello::board::Move *find_move(
-    const std::vector<othello::board::Move> &moves,
-    int row,
-    int col)
-{
-    for (const auto &move : moves)
+    othello::board::Move make_move(int row, int col)
     {
-        if (move.row == row && move.col == col)
-        {
-            return &move;
-        }
+        return othello::board::Move(row, col);
     }
-    return nullptr;
-}
+
+    std::uint64_t bit_at(int row, int col)
+    {
+        return 1ULL << (BOARD_SIZE * row + col);
+    }
+
+    int count_bits(std::uint64_t mask)
+    {
+        return __builtin_popcountll(mask);
+    }
+
+    const othello::board::Move *find_move(
+        const std::vector<othello::board::Move> &moves,
+        int row,
+        int col)
+    {
+        for (const auto &move : moves)
+        {
+            if (move.row == row && move.col == col)
+            {
+                return &move;
+            }
+        }
+        return nullptr;
+    }
 }
 
 // --- is_valid_move tests ---
@@ -211,15 +221,15 @@ TEST(MoveLogic, ComputeValidMovesNoMoves)
     EXPECT_EQ(b.compute_valid_moves(), 0);
 }
 
-// --- get_valid_moves tests ---
-TEST(MoveLogic, GetValidMovesMatchesCompute)
+// --- get_valid_move_mask tests ---
+TEST(MoveLogic, GetValidMoveMaskMatchesCompute)
 {
     othello::board::Board b;
     b.set_current_player(BLACK);
     int n = b.compute_valid_moves();
-    EXPECT_EQ(b.get_valid_moves().size(), n);
+    EXPECT_EQ(count_bits(b.get_valid_move_mask()), n);
 }
-TEST(MoveLogic, GetValidMovesAfterBoardChange)
+TEST(MoveLogic, GetValidMoveMaskAfterBoardChange)
 {
     othello::board::Board b;
     b.set_current_player(BLACK);
@@ -228,7 +238,7 @@ TEST(MoveLogic, GetValidMovesAfterBoardChange)
     ASSERT_EQ(b.process_move(move, BLACK), OK);
     b.set_current_player(WHITE);
     b.compute_valid_moves();
-    EXPECT_EQ(b.get_valid_moves().size(), b.compute_valid_moves());
+    EXPECT_EQ(count_bits(b.get_valid_move_mask()), b.compute_valid_moves());
 }
 
 TEST(MoveLogic, GetMovesForCurrentStateDoesNotMutateBoard)
@@ -239,7 +249,7 @@ TEST(MoveLogic, GetMovesForCurrentStateDoesNotMutateBoard)
     const int black_before = b.get_black_count();
     const int white_before = b.get_white_count();
     const Disc player_before = b.get_current_player();
-    const auto valid_moves_before = b.get_valid_moves();
+    const std::uint64_t valid_moves_before = b.get_valid_move_mask();
 
     const auto generated_moves = b.get_moves_for_current_state();
 
@@ -247,7 +257,7 @@ TEST(MoveLogic, GetMovesForCurrentStateDoesNotMutateBoard)
     EXPECT_EQ(b.get_black_count(), black_before);
     EXPECT_EQ(b.get_white_count(), white_before);
     EXPECT_EQ(b.get_current_player(), player_before);
-    EXPECT_EQ(b.get_valid_moves(), valid_moves_before);
+    EXPECT_EQ(b.get_valid_move_mask(), valid_moves_before);
 }
 
 TEST(MoveLogic, GetMovesForCurrentStateIncludesFlipMetadata)
@@ -259,8 +269,8 @@ TEST(MoveLogic, GetMovesForCurrentStateIncludesFlipMetadata)
     const auto *move = find_move(generated_moves, 2, 3);
 
     ASSERT_NE(move, nullptr);
-    ASSERT_EQ(move->flipped_discs.size(), 1U);
-    EXPECT_EQ(move->flipped_discs.front(), std::make_pair(3, 3));
+    EXPECT_EQ(move->flip_mask, bit_at(3, 3));
+    EXPECT_EQ(move->flip_count(), 1U);
 }
 
 TEST(MoveLogic, GetMovesForCurrentStateIsStableAcrossRepeatedCalls)
@@ -276,7 +286,8 @@ TEST(MoveLogic, GetMovesForCurrentStateIsStableAcrossRepeatedCalls)
     {
         const auto *repeated = find_move(second_result, move.row, move.col);
         ASSERT_NE(repeated, nullptr);
-        EXPECT_EQ(repeated->flipped_discs, move.flipped_discs);
+        EXPECT_EQ(repeated->flip_mask, move.flip_mask);
+        EXPECT_EQ(repeated->flip_count(), move.flip_count());
     }
 }
 
@@ -304,11 +315,11 @@ TEST(MoveLogic, IsGameOverPreservesCurrentTurnAndValidMoves)
     b.compute_valid_moves();
 
     const Disc player_before = b.get_current_player();
-    const auto valid_moves_before = b.get_valid_moves();
+    const std::uint64_t valid_moves_before = b.get_valid_move_mask();
 
     EXPECT_FALSE(b.is_game_over());
     EXPECT_EQ(b.get_current_player(), player_before);
-    EXPECT_EQ(b.get_valid_moves(), valid_moves_before);
+    EXPECT_EQ(b.get_valid_move_mask(), valid_moves_before);
 }
 
 TEST(MoveLogic, HashChangesWithBoardStateAndCurrentPlayer)

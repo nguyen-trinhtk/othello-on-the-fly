@@ -4,7 +4,6 @@
 #include <cctype>
 #include <sstream>
 #include <string>
-#include <unordered_set>
 #include <vector>
 
 namespace
@@ -90,6 +89,11 @@ namespace
         return formatted;
     }
 
+    [[nodiscard]] bool move_mask_contains(std::uint64_t mask, int row, int col) noexcept
+    {
+        return (mask & (1ULL << (BOARD_SIZE * row + col))) != 0;
+    }
+
     [[nodiscard]] std::vector<Move> sorted_valid_moves(const Board &board)
     {
         std::vector<Move> moves = board.get_moves_for_current_state();
@@ -167,10 +171,10 @@ namespace othello
 
         std::string render_board(const Board &board, bool show_valid_moves)
         {
-            std::unordered_set<Move, othello::board::MoveHash> valid_moves;
+            std::uint64_t valid_moves = 0;
             if (show_valid_moves)
             {
-                valid_moves = board.get_valid_moves();
+                valid_moves = board.get_valid_move_mask();
             }
 
             std::ostringstream out;
@@ -188,7 +192,7 @@ namespace othello
                     std::string_view cell = disc_symbol(board.get_square(row, col));
                     if (show_valid_moves &&
                         board.get_square(row, col) == EMPTY &&
-                        valid_moves.find(Move(row, col)) != valid_moves.end())
+                        move_mask_contains(valid_moves, row, col))
                     {
                         cell = "·";
                     }

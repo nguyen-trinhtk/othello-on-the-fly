@@ -3,8 +3,6 @@
 
 #include <cstdint>
 #include <cstddef>
-#include <unordered_set>
-#include <utility>
 #include <vector>
 
 #include "constants.hpp"
@@ -18,25 +16,21 @@ namespace othello
         {
             int row;
             int col;
-            std::vector<std::pair<int, int>> flipped_discs;
+            std::uint64_t flip_mask = 0;
 
             Move() noexcept
                 : row(-1), col(-1) {}
             Move(int r, int c) noexcept
                 : row(r), col(c) {}
 
+            [[nodiscard]] std::size_t flip_count() const noexcept
+            {
+                return static_cast<std::size_t>(__builtin_popcountll(flip_mask));
+            }
+
             [[nodiscard]] bool operator==(const Move &other) const noexcept
             {
                 return row == other.row && col == other.col;
-            }
-        };
-
-        // Hash function for Move
-        struct MoveHash
-        {
-            [[nodiscard]] std::size_t operator()(const Move &m) const noexcept
-            {
-                return std::hash<int>()(m.row) ^ (std::hash<int>()(m.col) << 1);
             }
         };
 
@@ -45,20 +39,32 @@ namespace othello
         private:
             std::uint64_t white_moves;
             std::uint64_t black_moves;
+            std::uint64_t hash_value = 0;
 
             Disc current_turn;
 
             // Zobrist table for hashing
             static std::uint64_t zobrist_table[8][8][2]; // 8x8 board, 2 players
             static void init_zobrist();
+            static void ensure_zobrist_initialized();
 
             [[nodiscard]] static constexpr bool is_in_bounds(int r, int c) noexcept
             {
                 return r >= 0 && r < BOARD_SIZE && c >= 0 && c < BOARD_SIZE;
             }
 
-            [[nodiscard]] std::unordered_set<Move, MoveHash> generate_valid_moves(Disc player) const;
-            [[nodiscard]] std::vector<std::pair<int, int>> collect_flipped_discs(const Move &move, Disc player) const;
+            [[nodiscard]] static constexpr std::uint64_t bit_at(int r, int c) noexcept
+            {
+                return 1ULL << (8 * r + c);
+            }
+
+            [[nodiscard]] std::uint64_t generate_valid_move_mask(Disc player) const;
+            [[nodiscard]] std::uint64_t collect_flip_mask(const Move &move, Disc player) const;
+            void rebuild_hash();
+            void xor_square_hash(int r, int c, Disc disc) noexcept;
+            void xor_mask_hash(std::uint64_t mask, Disc disc) noexcept;
+            void transfer_mask_hash(std::uint64_t mask, Disc from, Disc to) noexcept;
+
         public:
             Board();
 
@@ -85,34 +91,7 @@ namespace othello
                 }
             }
 
-            inline int set_square(int r, int c, Disc disc)
-            {
-                if (!is_in_bounds(r, c))
-                {
-                    return ERR_OUT_OF_BOUNDS;
-                }
-                const std::uint64_t bit = 1ULL << (8 * r + c);
-                if (disc == BLACK)
-                {
-                    black_moves |= bit;
-                    white_moves &= ~bit;
-                }
-                else if (disc == WHITE)
-                {
-                    white_moves |= bit;
-                    black_moves &= ~bit;
-                }
-                else if (disc == EMPTY)
-                {
-                    black_moves &= ~bit;
-                    white_moves &= ~bit;
-                }
-                else
-                {
-                    return ERR_INVALID_DISC;
-                }
-                return OK;
-            }
+            int set_square(int r, int c, Disc disc);
 
             // Evaluate the board: positive if more discs for 'player', negative if fewer
             [[nodiscard]] inline int evaluate(Disc player) const
@@ -140,19 +119,16 @@ namespace othello
                 return !has_valid_moves(BLACK) && !has_valid_moves(WHITE);
             }
 
-            [[nodiscard]] inline std::unordered_set<Move, MoveHash> get_valid_moves() const
+            [[nodiscard]] inline std::uint64_t get_valid_move_mask() const
             {
-                return generate_valid_moves(current_turn);
+                return generate_valid_move_mask(current_turn);
             }
             [[nodiscard]] inline Disc get_current_player() const
             {
                 return current_turn;
             }
 
-            inline void set_current_player(Disc player)
-            {
-                current_turn = player;
-            }
+            void set_current_player(Disc player);
 
             [[nodiscard]] bool has_valid_moves(Disc player) const;
             int compute_valid_moves() const;
