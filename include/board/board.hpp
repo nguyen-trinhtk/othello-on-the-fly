@@ -93,8 +93,8 @@ namespace othello
 
             int set_square(int r, int c, Disc disc);
 
-            // Evaluate the board: positive if more discs for 'player', negative if fewer
-            [[nodiscard]] inline int evaluate(Disc player) const
+            // Disc differential utility: positive if more discs for 'player', negative if fewer
+            [[nodiscard]] inline int disc_diff(Disc player) const
             {
                 // Count bits for each player
                 const int black_count = __builtin_popcountll(black_moves);
@@ -119,9 +119,21 @@ namespace othello
                 return !has_valid_moves(BLACK) && !has_valid_moves(WHITE);
             }
 
+            [[nodiscard]] inline std::uint64_t get_valid_move_mask(Disc player) const
+            {
+                return generate_valid_move_mask(player);
+            }
             [[nodiscard]] inline std::uint64_t get_valid_move_mask() const
             {
                 return generate_valid_move_mask(current_turn);
+            }
+            [[nodiscard]] inline std::uint64_t get_player_bits(Disc player) const
+            {
+                return player == BLACK ? black_moves : white_moves;
+            }
+            [[nodiscard]] inline std::uint64_t get_empty_bits() const
+            {
+                return ~(black_moves | white_moves);
             }
             [[nodiscard]] inline Disc get_current_player() const
             {

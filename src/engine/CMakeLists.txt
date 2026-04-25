@@ -1,5 +1,6 @@
 add_library(engine
     alphabeta.cpp
+    evaluation.cpp
     trans_table.cpp
 )
 target_link_libraries(engine PUBLIC board)

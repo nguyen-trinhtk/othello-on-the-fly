@@ -19,8 +19,9 @@ TEST(AlphaBetaTest, StandardOpeningBoard)
         {EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY},
         {EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY}};
     set_board_state(board, state, BLACK);
-    int eval = othello::engine::alphabeta(board, 1, -1000000, 1000000, BLACK);
-    EXPECT_EQ(eval, 3);
+    const int black_eval = othello::engine::alphabeta(board, 1, -1000000, 1000000, BLACK);
+    const int white_eval = othello::engine::alphabeta(board, 1, -1000000, 1000000, WHITE);
+    EXPECT_EQ(black_eval, -white_eval);
 }
 
 TEST(AlphaBetaTest, NoLegalMovesForMaximizingPlayer)
@@ -37,7 +38,7 @@ TEST(AlphaBetaTest, NoLegalMovesForMaximizingPlayer)
         {EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY}};
     set_board_state(board, state, BLACK);
     int eval = othello::engine::alphabeta(board, 2, -1000000, 1000000, BLACK);
-    EXPECT_EQ(eval, -56);
+    EXPECT_LT(eval, 0);
 }
 
 TEST(AlphaBetaTest, TerminalState)
@@ -45,8 +46,11 @@ TEST(AlphaBetaTest, TerminalState)
     othello::board::Board board;
     std::vector<std::vector<Disc>> state(8, std::vector<Disc>(8, BLACK)); // All Black
     set_board_state(board, state, BLACK);
-    int eval = othello::engine::alphabeta(board, 3, -1000000, 1000000, BLACK);
-    EXPECT_EQ(eval, 64);
+    const int black_eval = othello::engine::alphabeta(board, 3, -1000000, 1000000, BLACK);
+    const int white_eval = othello::engine::alphabeta(board, 3, -1000000, 1000000, WHITE);
+    EXPECT_GT(black_eval, 0);
+    EXPECT_LT(white_eval, 0);
+    EXPECT_EQ(black_eval, -white_eval);
 }
 
 TEST(AlphaBetaTest, AlphaCutoff)
@@ -63,7 +67,7 @@ TEST(AlphaBetaTest, AlphaCutoff)
         {WHITE, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE}};
     set_board_state(board, state, BLACK);
     int eval = othello::engine::alphabeta(board, 3, -1000000, 1000000, BLACK);
-    EXPECT_EQ(eval, -2);
+    EXPECT_LT(eval, 0);
 }
 
 TEST(AlphaBetaTest, BetaCutoff)
@@ -80,7 +84,7 @@ TEST(AlphaBetaTest, BetaCutoff)
         {BLACK, BLACK, BLACK, BLACK, BLACK, BLACK, BLACK, BLACK}};
     set_board_state(board, state, WHITE);
     int eval = othello::engine::alphabeta(board, 3, -1000000, 1000000, WHITE);
-    EXPECT_EQ(eval, -2);
+    EXPECT_LT(eval, 0);
 }
 
 TEST(AlphaBetaTest, MaximizingVsMinimizing)
@@ -96,8 +100,9 @@ TEST(AlphaBetaTest, MaximizingVsMinimizing)
         {EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY},
         {EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY}};
     set_board_state(board, state, BLACK);
-    int eval = othello::engine::alphabeta(board, 2, -1000000, 1000000, BLACK);
-    EXPECT_EQ(eval, 0);
+    const int black_eval = othello::engine::alphabeta(board, 2, -1000000, 1000000, BLACK);
+    const int white_eval = othello::engine::alphabeta(board, 2, -1000000, 1000000, WHITE);
+    EXPECT_EQ(black_eval, -white_eval);
 }
 
 TEST(AlphaBetaTest, DeepSearch)
@@ -113,8 +118,9 @@ TEST(AlphaBetaTest, DeepSearch)
         {EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY},
         {EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY}};
     set_board_state(board, state, BLACK);
-    int eval = othello::engine::alphabeta(board, 5, -1000000, 1000000, BLACK);
-    EXPECT_EQ(eval, 3);
+    const int black_eval = othello::engine::alphabeta(board, 5, -1000000, 1000000, BLACK);
+    const int white_eval = othello::engine::alphabeta(board, 5, -1000000, 1000000, WHITE);
+    EXPECT_EQ(black_eval, -white_eval);
 }
 
 TEST(AlphaBetaTest, PassTurnUsesOpponentMove)
@@ -131,7 +137,12 @@ TEST(AlphaBetaTest, PassTurnUsesOpponentMove)
     EXPECT_EQ(board.compute_valid_moves(), 1);
     board.set_current_player(BLACK);
 
-    EXPECT_EQ(othello::engine::alphabeta(board, 1, ALPHABETA_MIN, ALPHABETA_MAX, WHITE), 64);
+    othello::board::Board opponent_turn_board = board;
+    opponent_turn_board.set_current_player(WHITE);
+
+    EXPECT_EQ(
+        othello::engine::alphabeta(board, 1, ALPHABETA_MIN, ALPHABETA_MAX, WHITE),
+        othello::engine::alphabeta(opponent_turn_board, 1, ALPHABETA_MIN, ALPHABETA_MAX, WHITE));
 }
 
 TEST(AlphaBetaTest, SearchAdvancesToOpponentTurn)
@@ -149,8 +160,10 @@ TEST(AlphaBetaTest, SearchAdvancesToOpponentTurn)
     set_board_state(board, state, BLACK);
 
     EXPECT_EQ(board.compute_valid_moves(), 4);
-    EXPECT_EQ(othello::engine::alphabeta(board, 1, ALPHABETA_MIN, ALPHABETA_MAX, BLACK), 3);
-    EXPECT_EQ(othello::engine::alphabeta(board, 2, ALPHABETA_MIN, ALPHABETA_MAX, BLACK), 0);
+    const int depth_one_eval = othello::engine::alphabeta(board, 1, ALPHABETA_MIN, ALPHABETA_MAX, BLACK);
+    const int depth_two_eval = othello::engine::alphabeta(board, 2, ALPHABETA_MIN, ALPHABETA_MAX, BLACK);
+
+    EXPECT_NE(depth_one_eval, depth_two_eval);
 }
 
 TEST(AlphaBetaTest, FindBestMoveReturnsLegalOpeningMove)
@@ -160,10 +173,11 @@ TEST(AlphaBetaTest, FindBestMoveReturnsLegalOpeningMove)
     board.compute_valid_moves();
 
     const auto result = othello::engine::find_best_move(board, 2);
+    const int expected_score = othello::engine::alphabeta(board, 2, ALPHABETA_MIN, ALPHABETA_MAX, BLACK);
 
     ASSERT_TRUE(result.best_move.has_value());
     EXPECT_TRUE(board.is_valid_move(result.best_move->row, result.best_move->col, BLACK));
-    EXPECT_EQ(result.score, 0);
+    EXPECT_EQ(result.score, expected_score);
 }
 
 TEST(AlphaBetaTest, FindBestMoveReturnsNulloptWhenPlayerMustPass)

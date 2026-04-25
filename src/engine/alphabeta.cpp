@@ -4,6 +4,7 @@
 #include <utility>
 
 #include "engine/alphabeta.hpp"
+#include "engine/evaluation.hpp"
 #include "engine/trans_table.hpp"
 
 namespace othello
@@ -226,13 +227,13 @@ namespace othello
             {
                 if (budget_exhausted(context))
                 {
-                    return board.evaluate(perspective_player);
+                    return evaluate_position(board, perspective_player);
                 }
 
                 ++context.stats.nodes_searched;
                 if (depth == 0)
                 {
-                    return board.evaluate(perspective_player);
+                    return evaluate_position(board, perspective_player);
                 }
 
                 const int original_alpha = alpha;
@@ -272,7 +273,7 @@ namespace othello
                 {
                     if (!board.has_valid_moves(opponent(current_player)))
                     {
-                        return board.evaluate(perspective_player);
+                        return evaluate_position(board, perspective_player);
                     }
 
                     board.set_current_player(opponent(current_player));
@@ -331,7 +332,7 @@ namespace othello
                     {
                         context.aborted = true;
                         update_elapsed(context);
-                        return best_move != nullptr ? best_eval : board.evaluate(perspective_player);
+                        return best_move != nullptr ? best_eval : evaluate_position(board, perspective_player);
                     }
 
                     if (context.aborted)
@@ -367,7 +368,7 @@ namespace othello
 
                 if (context.aborted)
                 {
-                    return best_move != nullptr ? best_eval : board.evaluate(perspective_player);
+                    return best_move != nullptr ? best_eval : evaluate_position(board, perspective_player);
                 }
 
                 TTEntryType entry_type = TTEntryType::EXACT;
@@ -386,7 +387,7 @@ namespace othello
                     return best_eval;
                 }
 
-                return board.evaluate(perspective_player);
+                return evaluate_position(board, perspective_player);
             }
 
             SearchResult search_at_depth(
@@ -396,7 +397,7 @@ namespace othello
             {
                 SearchResult result{};
                 const Disc perspective_player = board.get_current_player();
-                result.score = board.evaluate(perspective_player);
+                result.score = evaluate_position(board, perspective_player);
 
                 if (budget_exhausted(context))
                 {
@@ -504,7 +505,9 @@ namespace othello
                 SearchContext context(options);
 
                 SearchResult best_result{};
-                best_result.score = working_board.evaluate(working_board.get_current_player());
+                best_result.score = evaluate_position(
+                    working_board,
+                    working_board.get_current_player());
                 best_result.completed = false;
 
                 if (options.max_depth <= 0)

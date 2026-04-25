@@ -110,8 +110,8 @@ TEST(BoardState, EvaluateInitial)
 {
 
     othello::board::Board b;
-    EXPECT_EQ(b.evaluate(BLACK), 0);
-    EXPECT_EQ(b.evaluate(WHITE), 0);
+    EXPECT_EQ(b.disc_diff(BLACK), 0);
+    EXPECT_EQ(b.disc_diff(WHITE), 0);
 }
 
 TEST(BoardState, EvaluateMoreBlack)
@@ -119,8 +119,8 @@ TEST(BoardState, EvaluateMoreBlack)
 
     othello::board::Board b;
     fill_board(b, BLACK);
-    EXPECT_GT(b.evaluate(BLACK), 0);
-    EXPECT_LT(b.evaluate(WHITE), 0);
+    EXPECT_GT(b.disc_diff(BLACK), 0);
+    EXPECT_LT(b.disc_diff(WHITE), 0);
 }
 
 // is_game_over tests
