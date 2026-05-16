@@ -17,7 +17,8 @@ add_library(othello_lib
     src/game.cpp
     src/rules.cpp
     src/bitboard.cpp
-    src/eval.cpp
+    src/eval/component_eval.cpp
+    src/eval/mask_eval.cpp
     src/ai.cpp
     src/render.cpp
     src/game_result.cpp

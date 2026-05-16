@@ -1,11 +1,39 @@
 #include "ai.h"
 
+#include "eval/component_eval.h"
+
 #include <algorithm>
 #include <limits>
 
 constexpr int NEG_INF = std::numeric_limits<int>::min();
 constexpr int POS_INF = std::numeric_limits<int>::max();
 
+// Constructors
+AIEngine::AIEngine()
+    : m_search_depth(5),
+      m_evaluator(std::make_unique<ComponentEvaluator>())
+{
+}
+
+AIEngine::AIEngine(int search_depth)
+    : m_search_depth(search_depth),
+      m_evaluator(std::make_unique<ComponentEvaluator>())
+{
+}
+
+AIEngine::AIEngine(int search_depth, std::unique_ptr<IEvaluator> evaluator)
+    : m_search_depth(search_depth),
+      m_evaluator(evaluator ? std::move(evaluator) : std::make_unique<ComponentEvaluator>())
+{
+}
+
+void AIEngine::set_evaluator(std::unique_ptr<IEvaluator> evaluator)
+{
+    m_evaluator = evaluator ? std::move(evaluator) : std::make_unique<ComponentEvaluator>();
+    m_tt.clear();
+}
+
+// Main entry
 std::optional<Move> AIEngine::best_move(const Board& board, Player player)
 {
     m_tt.clear(); // TODO: cache TT?
@@ -46,7 +74,7 @@ int AIEngine::negamax(const Board& board, int depth, int alpha, int beta, Player
     */
     if (depth == 0) {
         // Base case
-        return Eval::score(board, player);
+        return m_evaluator->evaluate(board, player);
     }
 
     // Get Zobrist key
@@ -63,7 +91,7 @@ int AIEngine::negamax(const Board& board, int depth, int alpha, int beta, Player
         // No valid moves for player
         if (!Rules::has_valid_move(board, opponent(player))) {
             // No valid moves for op
-            const int s = Eval::score(board, player);
+            const int s = m_evaluator->evaluate(board, player);
             m_tt.store(key, depth, s, alpha, beta);
             return s;
         }
