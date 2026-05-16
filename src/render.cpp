@@ -18,17 +18,15 @@ void ConsoleRenderer::render_board(const Board &board) const
     std::cout << "\n";
 }
 
-void ConsoleRenderer::render_game_over(Player winner) const
+void ConsoleRenderer::render_game_over(const GameOutcome &outcome) const
 {
-    std::cout << "Game Over! ";
-    if (winner == Player::BLACK)
+    std::cout << "Game Over! Black: " << outcome.black_count << "  White: " << outcome.white_count << "\n";
+    if (!outcome.winner.has_value())
     {
-        std::cout << "Black wins!\n";
+        std::cout << "Tie.\n";
+        return;
     }
-    else
-    {
-        std::cout << "White wins!\n";
-    }
+    std::cout << (outcome.winner.value() == Player::BLACK ? "Black wins!\n" : "White wins!\n");
 }
 
 void ConsoleRenderer::render_turn(Player current_player) const

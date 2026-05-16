@@ -14,6 +14,11 @@ namespace
     {
         return Bitboards{board.discs(player), board.discs(opponent(player))};
     }
+
+    uint64_t valid_moves_mask(const Board &board, Player player)
+    {
+        return Bitboard::valid_moves_mask(make_bitboards(board, player));
+    }
 }
 
 bool Rules::is_valid_move(const Board &board, Player player, const Position &pos)
@@ -21,14 +26,18 @@ bool Rules::is_valid_move(const Board &board, Player player, const Position &pos
     if (!is_in_bounds(pos))
         return false;
 
-    const Bitboards bitboards = make_bitboards(board, player);
-    return (Bitboard::valid_moves_mask(bitboards) & Bitboard::bit_at(pos.row, pos.col)) != 0;
+    return (valid_moves_mask(board, player) & Bitboard::bit_at(pos.row, pos.col)) != 0;
+}
+
+bool Rules::has_valid_move(const Board &board, Player player)
+{
+    return valid_moves_mask(board, player) != 0;
 }
 
 std::vector<Move> Rules::get_all_valid_moves(const Board &board, Player player)
 {
     std::vector<Move> valid_moves;
-    uint64_t move_mask = Bitboard::valid_moves_mask(make_bitboards(board, player));
+    uint64_t move_mask = valid_moves_mask(board, player);
 
     while (move_mask != 0)
     {

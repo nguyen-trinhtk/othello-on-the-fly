@@ -1,0 +1,8 @@
+/Users/nguyentrinh/Documents/GitHub/othello-on-the-fly/build/CMakeFiles/othello_lib.dir
+/Users/nguyentrinh/Documents/GitHub/othello-on-the-fly/build/CMakeFiles/othello.dir
+/Users/nguyentrinh/Documents/GitHub/othello-on-the-fly/build/CMakeFiles/test.dir
+/Users/nguyentrinh/Documents/GitHub/othello-on-the-fly/build/CMakeFiles/edit_cache.dir
+/Users/nguyentrinh/Documents/GitHub/othello-on-the-fly/build/CMakeFiles/rebuild_cache.dir
+/Users/nguyentrinh/Documents/GitHub/othello-on-the-fly/build/tests/CMakeFiles/test.dir
+/Users/nguyentrinh/Documents/GitHub/othello-on-the-fly/build/tests/CMakeFiles/edit_cache.dir
+/Users/nguyentrinh/Documents/GitHub/othello-on-the-fly/build/tests/CMakeFiles/rebuild_cache.dir

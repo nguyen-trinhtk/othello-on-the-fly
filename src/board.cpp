@@ -1,5 +1,14 @@
 #include "board.h"
 
+#include "bitboard.h"
+
+Board Board::standard_start() {
+    Board b;
+    b.m_black_discs = Bitboard::bit_at(3, 4) | Bitboard::bit_at(4, 3);
+    b.m_white_discs = Bitboard::bit_at(3, 3) | Bitboard::bit_at(4, 4);
+    return b;
+}
+
 Board Board::clone() const
 {
     Board new_board;

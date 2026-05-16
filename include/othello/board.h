@@ -16,6 +16,7 @@ private:
 
 public:
     static constexpr int SIZE = 8; // Board size const
+    static Board standard_start(); // Center 2x2
 
     Board clone() const; // Prototype
     uint64_t discs(Player player) const;

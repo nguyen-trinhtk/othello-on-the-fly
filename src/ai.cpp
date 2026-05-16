@@ -6,12 +6,11 @@
 constexpr int NEG_INF = std::numeric_limits<int>::min();
 constexpr int POS_INF = std::numeric_limits<int>::max();
 
-Move AIEngine::best_move(const Board& board, Player player)
+std::optional<Move> AIEngine::best_move(const Board& board, Player player)
 {
-    // TODO: wire with GameState
     std::vector<Move> moves = Rules::get_all_valid_moves(board, player);
     if (moves.empty())
-        return Move{Position{-1, -1}};
+        return std::nullopt;
 
     Move best = moves.front();
     int best_score = NEG_INF;
@@ -42,9 +41,7 @@ int AIEngine::negamax(const Board& board, int depth, int alpha, int beta, Player
     std::vector<Move> moves = Rules::get_all_valid_moves(board, player);
 
     if (moves.empty()) {
-        std::vector<Move> opp_moves = Rules::get_all_valid_moves(board, opponent(player));
-
-        if (opp_moves.empty()) {
+        if (!Rules::has_valid_move(board, opponent(player))) {
             return Eval::score(board, player);
         }
 

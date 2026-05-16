@@ -3,7 +3,8 @@
 #include "types.h"
 #include "board.h"
 #include "move.h"
-#include "rules.h" // Use the rules namespaces later
+#include "rules.h"
+#include <vector>
 
 class GameState
 {
@@ -14,7 +15,12 @@ public:
         return instance;
     }
 
-    // Member functions
+    const Board &board() const { return m_board; }
+    Player current_player() const { return m_current_player; }
+
+    void reset();
+    std::vector<Move> valid_moves() const;
+
     OptError play_move(const Move &move);
     void switch_turn();
     bool is_game_over() const;
@@ -26,7 +32,6 @@ private:
     GameState &operator=(const GameState &) = delete; // no copy
     ~GameState() = default;
 
-    // Member vars
-    Board m_board;
-    Player m_current_player = Player::BLACK; // Black first
+    Board m_board{Board::standard_start()};
+    Player m_current_player = Player::BLACK;
 };

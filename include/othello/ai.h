@@ -4,6 +4,7 @@
 #include "move.h"
 #include "eval.h"
 #include "rules.h"
+#include <optional>
 
 class AIEngine {
 public:
@@ -11,7 +12,7 @@ public:
     explicit AIEngine(int search_depth) : m_search_depth(search_depth) {}
     ~AIEngine() = default;
 
-    Move best_move(const Board& board, Player player);
+    std::optional<Move> best_move(const Board& board, Player player);
 
 private:
     int m_search_depth = 5;

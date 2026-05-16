@@ -9,7 +9,7 @@ else()
 endif()
 
 # Include directories
-include_directories(include)
+include_directories(include include/othello)
 
 # Core library
 add_library(othello_lib
@@ -18,7 +18,9 @@ add_library(othello_lib
     src/rules.cpp
     src/bitboard.cpp
     src/eval.cpp
+    src/ai.cpp
     src/render.cpp
+    src/game_result.cpp
 )
 
 target_include_directories(othello_lib PUBLIC include)
