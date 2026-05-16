@@ -1,8 +1,0 @@
-{
-	"InstallScripts" : 
-	[
-		"/Users/nguyentrinh/Documents/GitHub/othello-on-the-fly/build/cmake_install.cmake",
-		"/Users/nguyentrinh/Documents/GitHub/othello-on-the-fly/build/tests/cmake_install.cmake"
-	],
-	"Parallel" : false
-}

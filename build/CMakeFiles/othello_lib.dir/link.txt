@@ -1,2 +1,0 @@
-/usr/bin/ar qc libothello_lib.a CMakeFiles/othello_lib.dir/src/board.cpp.o CMakeFiles/othello_lib.dir/src/game.cpp.o CMakeFiles/othello_lib.dir/src/rules.cpp.o CMakeFiles/othello_lib.dir/src/bitboard.cpp.o CMakeFiles/othello_lib.dir/src/eval.cpp.o CMakeFiles/othello_lib.dir/src/ai.cpp.o CMakeFiles/othello_lib.dir/src/render.cpp.o CMakeFiles/othello_lib.dir/src/game_result.cpp.o
-/usr/bin/ranlib libothello_lib.a

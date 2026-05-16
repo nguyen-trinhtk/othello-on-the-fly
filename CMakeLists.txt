@@ -21,6 +21,8 @@ add_library(othello_lib
     src/ai.cpp
     src/render.cpp
     src/game_result.cpp
+    src/zobrist.cpp
+    src/trans_table.cpp
 )
 
 target_include_directories(othello_lib PUBLIC include)
@@ -29,6 +31,8 @@ target_compile_features(othello_lib PUBLIC cxx_std_20)
 # Main executable
 add_executable(othello apps/main.cpp)
 target_link_libraries(othello PRIVATE othello_lib)
+
+add_subdirectory(benchmarks)
 
 # Tests
 enable_testing()
