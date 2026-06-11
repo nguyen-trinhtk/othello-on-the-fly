@@ -1,6 +1,10 @@
 cmake_minimum_required(VERSION 3.20)
 project(othello VERSION 1.0.0 LANGUAGES CXX)
 
+find_package(Threads REQUIRED)
+
+include("${CMAKE_SOURCE_DIR}/cmake/generate_eval_registry.cmake")
+
 # Compiler flags
 if(MSVC)
     add_compile_options(/W4)
@@ -24,10 +28,12 @@ add_library(othello_lib
     src/game_result.cpp
     src/zobrist.cpp
     src/trans_table.cpp
+    src/util/thread-pool.cpp
 )
 
-target_include_directories(othello_lib PUBLIC include)
+target_include_directories(othello_lib PUBLIC include "${CMAKE_BINARY_DIR}/generated")
 target_compile_features(othello_lib PUBLIC cxx_std_20)
+target_link_libraries(othello_lib PUBLIC Threads::Threads)
 
 # Main executable
 add_executable(othello apps/main.cpp)

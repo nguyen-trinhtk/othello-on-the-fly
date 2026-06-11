@@ -1,20 +1,37 @@
 #include "othello/ai.h"
 #include "othello/board.h"
 #include "othello/types.h"
+#include "eval/eval_registry.h"
 
 #include <chrono>
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
+#include <memory>
+#include <sstream>
 #include <string>
 
 namespace
 {
+    std::string eval_choices()
+    {
+        std::ostringstream out;
+        const auto& entries = eval_registry();
+        for (std::size_t i = 0; i < entries.size(); ++i) {
+            if (i > 0)
+                out << " | ";
+            out << entries[i].name;
+        }
+        return out.str();
+    }
+
     void usage(const char *argv0)
     {
-        std::cerr << "Usage: " << (argv0 ? argv0 : "bench") << " [depth] [runs]\n"
-                  << "  depth  search depth (default 8)\n"
-                  << "  runs   repetitions after warm-up (default 10)\n";
+        std::cerr << "Usage: " << (argv0 ? argv0 : "bench") << " [depth] [runs] [eval] [parallel]\n"
+                  << "  depth     search depth (default 10)\n"
+                  << "  runs      repetitions after warm-up (default 20)\n"
+                  << "  eval      " << eval_choices() << " (default component)\n"
+                  << "  parallel  none | thread-pool (default thread-pool)\n";
     }
 
     int parse_pos_int(const char *s, const char *name, int fallback)
@@ -41,11 +58,34 @@ int main(int argc, char **argv)
         return 0;
     }
 
-    const int depth = argc >= 2 ? parse_pos_int(argv[1], "depth", 8) : 8;
-    const int runs = argc >= 3 ? parse_pos_int(argv[2], "runs", 10) : 10;
+    const int depth = argc >= 2 ? parse_pos_int(argv[1], "depth", 10) : 10;
+    const int runs = argc >= 3 ? parse_pos_int(argv[2], "runs", 20) : 20;
+
+    const char *eval_name = (argc >= 4 && argv[3]) ? argv[3] : "component";
+    const auto eval_index = find_eval(eval_name);
+    if (!eval_index)
+    {
+        std::cerr << "Unknown eval \"" << eval_name << "\"; use " << eval_choices() << ".\n";
+        return 1;
+    }
+    const EvalEntry& eval_entry = eval_registry()[*eval_index];
+    std::unique_ptr<IEvaluator> evaluator = eval_entry.make();
+
+    const char *parallel_name = (argc >= 5 && argv[4]) ? argv[4] : "thread-pool";
+    bool parallel = true;
+    if (std::strcmp(parallel_name, "none") == 0)
+        parallel = false;
+    else if (std::strcmp(parallel_name, "thread-pool") == 0)
+        parallel = true;
+    else
+    {
+        std::cerr << "Unknown parallel \"" << parallel_name << "\"; use none or thread-pool.\n";
+        return 1;
+    }
 
     const Board board = Board::standard_start();
-    AIEngine ai(depth);
+    AIEngine ai(depth, std::move(evaluator));
+    ai.set_parallel(parallel);
 
     (void)ai.best_move(board, Player::BLACK);
 
@@ -62,8 +102,9 @@ int main(int argc, char **argv)
         std::chrono::duration<double, std::milli>{total}.count();
     const double avg_ms = total_ms / static_cast<double>(runs);
 
-    std::cout << "depth=" << depth << " runs=" << runs << " total_ms=" << total_ms
-              << " avg_ms=" << avg_ms << '\n';
+    std::cout << "eval=" << eval_entry.name << " eval_label=" << eval_entry.label
+              << " parallel=" << parallel_name << " depth=" << depth << " runs=" << runs
+              << " total_ms=" << total_ms << " avg_ms=" << avg_ms << '\n';
 
     return 0;
 }
