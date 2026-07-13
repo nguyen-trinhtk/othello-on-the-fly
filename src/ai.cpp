@@ -47,9 +47,20 @@ void AIEngine::set_parallel(bool enabled)
     m_parallel = enabled;
 }
 
+void AIEngine::reset_search_stats()
+{
+    m_search_nodes = 0;
+}
+
+std::uint64_t AIEngine::last_search_nodes() const
+{
+    return m_search_nodes.load();
+}
+
 // Main entry
 std::optional<Move> AIEngine::best_move(const Board& board, Player player)
 {
+    reset_search_stats();
     std::vector<Move> moves = Rules::get_all_valid_moves(board, player);
     if (moves.empty())
         return std::nullopt;
@@ -94,6 +105,8 @@ std::optional<Move> AIEngine::best_move(const Board& board, Player player)
 int AIEngine::negamax(const Board& board, int depth, int alpha, int beta,
                       Player player, TranspositionTable& tt)
 {
+    ++m_search_nodes;
+
     if (depth == 0)
         return m_evaluator->evaluate(board, player);
 

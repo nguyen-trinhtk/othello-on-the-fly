@@ -4,11 +4,18 @@
 file(GLOB EVAL_HEADERS CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/include/eval/*_eval.h")
 list(SORT EVAL_HEADERS)
 
+# Evaluators listed here are built but omitted from eval_registry() / bench round-robin.
+set(EVAL_REGISTRY_EXCLUDE component)
+
 set(INCLUDES "")
 set(ENTRIES "")
 foreach(HEADER ${EVAL_HEADERS})
     get_filename_component(BASENAME ${HEADER} NAME)
     string(REGEX REPLACE "_eval\\.h$" "" NAME ${BASENAME})
+
+    if(NAME IN_LIST EVAL_REGISTRY_EXCLUDE)
+        continue()
+    endif()
 
     string(SUBSTRING ${NAME} 0 1 FIRST)
     string(TOUPPER ${FIRST} FIRST_UP)

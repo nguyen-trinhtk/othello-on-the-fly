@@ -1,0 +1,38 @@
+=== bench-time ===
+generated: 2026-06-14 11:14:03
+
+bench-time
+  strategy : mask
+  depth    : 5
+  runs     : 20
+
+  parallel : none
+
+position      avg ms      nodes/s
+------------------------------------
+opening       1.91        83175
+midgame       8.36        1634265
+near-endgame  1.44        287774
+
+  parallel : thread-pool
+
+position      avg ms      nodes/s
+------------------------------------
+opening       2.48        64020
+midgame       9.87        1432799
+near-endgame  9.07        45530
+
+=== bench-strength ===
+
+bench-strength
+  depth   : 3
+  matches : 100 (half as black, half as white)
+
+win_rate %  row = player, col = opponent
+
+          component     count      mask    ntuple       swh
+component         -     100.0      50.0     100.0      50.0
+    count       0.0         -       0.0       0.0       0.0
+     mask      50.0     100.0         -       0.0       0.0
+   ntuple       0.0     100.0     100.0         -       0.0
+      swh      50.0     100.0     100.0     100.0         -

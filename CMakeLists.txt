@@ -23,6 +23,7 @@ add_library(othello_lib
     src/bitboard.cpp
     src/eval/component_eval.cpp
     src/eval/mask_eval.cpp
+    src/ntuple/ntuple.cpp
     src/ai.cpp
     src/render.cpp
     src/game_result.cpp
@@ -31,13 +32,17 @@ add_library(othello_lib
     src/util/thread-pool.cpp
 )
 
-target_include_directories(othello_lib PUBLIC include "${CMAKE_BINARY_DIR}/generated")
+target_include_directories(othello_lib PUBLIC include include/othello "${CMAKE_BINARY_DIR}/generated")
 target_compile_features(othello_lib PUBLIC cxx_std_20)
 target_link_libraries(othello_lib PUBLIC Threads::Threads)
 
 # Main executable
-add_executable(othello apps/main.cpp)
+add_executable(othello app/main.cpp)
 target_link_libraries(othello PRIVATE othello_lib)
+
+# N-tuple training tool
+add_executable(train_ntuple src/ntuple/train.cpp)
+target_link_libraries(train_ntuple PRIVATE othello_lib)
 
 add_subdirectory(benchmarks)
 
