@@ -2,6 +2,14 @@
 
 This is a C++ Othello (aka Reversi) engine aimed at strong play and fast search. It uses **negamax** with **alpha–beta pruning**, a **transposition table** (Zobrist hashing), **thread-pool** root parallelism, and an **n-tuple neural network** evaluator.
 
+This is how a gameplay can look like (timelapsed). 
+
+<img width="300" height="300" alt="othello" src="https://github.com/user-attachments/assets/53ad9bdd-b556-4aa5-a531-695a5b6066d6" />
+
+(Thanks Claude for helping create the simulator.)
+
+For more about the game, please see this [rulebook by World Othello Foundation](https://www.worldothello.org/about/about-othello/othello-rules/official-rules/english).
+
 ## Implementation
 
 **Search**
