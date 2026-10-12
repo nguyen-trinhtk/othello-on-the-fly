@@ -20,10 +20,11 @@ For more about the game, please see this [rulebook by World Othello Foundation](
 
 **Evaluation**
 
-A good eval lets the engine stay strong without searching as deep:
+As you can see from the above GIF, a greedy approach based on disc counts does not always work. Play strategies also depend on the location of the discs played; usually, this also means some sort of "fortune-telling" of the board state. Nevertheless, there exist good evaluation methods that let the engine stay strong without searching as deeply.
 
-- **N-tuple neural network**: lightweight model learning board state via cell pairs. Trained in **PyTorch**, then loaded by the C++ engine for fast scoring.
+A dynamic-learning approach is very relevant here. This repo implements an N-tuple network ([Jaskowski 2014](https://arxiv.org/pdf/1406.1509)), a lightweight approach with only 256 weights for faster inference. Heavier alternatives are present in more complex CNNs (e.g. [Liskowski et al.](https://arxiv.org/abs/1711.06583)).
 
+The network is trained via two-step reinforcement learning (RL): first against heuristics, then using Temporal Difference (TD) learning. It is trained in PyTorch and then loaded by the C++ engine.
 ## Repo structure
 
 ```
