@@ -2,17 +2,15 @@
 
 This is a C++ Othello (aka Reversi) engine aimed at strong play and fast search. It uses **negamax** with **alpha–beta pruning**, a **transposition table** (Zobrist hashing), **thread-pool** root parallelism, and an **n-tuple neural network** evaluator.
 
-Try the game in your browser: **[Othello on the Fly](https://nguyen-trinhtk.github.io/othello-on-the-fly)**
-
-<p align="center">
-  <img src="docs/web-gui.gif" alt="Playing a few moves against the AI in the web version" width="480">
-</p>
+Try out the game on web: <a href="https://nguyen-trinhtk.github.io/othello-on-the-fly" target="_blank" rel="noopener noreferrer"><strong>Othello on the Fly</strong></a>
 
 This is how a gameplay can look like (timelapsed). 
 
-<img width="300" height="300" alt="othello" src="https://github.com/user-attachments/assets/53ad9bdd-b556-4aa5-a531-695a5b6066d6" />
+<p align="center">
+  <img width="300" height="auto" src="docs/web-gui.gif" alt="Playing a few moves against the AI in the web version" width="480">
+</p>
 
-(Thanks Claude for helping create the simulator.)
+(Thanks Claude for helping with the GIF.)
 
 For more about the game, please see this [rulebook by World Othello Foundation](https://www.worldothello.org/about/about-othello/othello-rules/official-rules/english).
 
