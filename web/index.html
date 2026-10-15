@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Othello on the Fly</title>
+  <script src="all-cores.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet" crossorigin>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Effects that make lines and paint look hand drawn -->
+  <svg class="effects" aria-hidden="true">
+    <filter id="ink" x="-5%" y="-5%" width="110%" height="110%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.03" numOctaves="2" seed="7" />
+      <feDisplacementMap in="SourceGraphic" scale="4" />
+    </filter>
+    <filter id="wood" x="-5%" y="-5%" width="110%" height="110%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="3" seed="11" />
+      <feDisplacementMap in="SourceGraphic" scale="8" />
+    </filter>
+    <filter id="paint" x="-10%" y="-10%" width="120%" height="120%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.012" numOctaves="3" seed="3" />
+      <feDisplacementMap in="SourceGraphic" scale="16" />
+    </filter>
+  </svg>
+
+  <main class="game">
+
+    <header class="top">
+      <div class="scores">
+        <span class="score">
+          <span class="mini black" aria-hidden="true"></span>
+          <span class="count" id="black-count">2</span>
+          <span class="who" id="black-who">You</span>
+        </span>
+        <span class="score">
+          <span class="mini white" aria-hidden="true"></span>
+          <span class="count" id="white-count">2</span>
+          <span class="who" id="white-who">AI</span>
+        </span>
+      </div>
+      <p class="status" id="status" aria-live="polite"></p>
+    </header>
+
+    <div class="frame">
+      <div class="wood" aria-hidden="true"></div>
+      <div class="wood-stain one" aria-hidden="true"></div>
+      <div class="wood-stain two" aria-hidden="true"></div>
+      <svg class="grain" viewBox="0 0 672 652" preserveAspectRatio="none" aria-hidden="true">
+        <g class="grain-lines">
+          <path d="M8 12 C 120 6, 240 20, 380 11 S 600 4, 664 14" />
+          <path d="M10 30 C 150 24, 260 38, 420 28 S 610 22, 662 32" />
+          <path d="M30 72 C 60 140, 22 220, 34 300 S 18 460, 30 560 S 26 620, 34 640" />
+          <path d="M14 120 C 40 180, 10 260, 18 340 S 8 480, 16 600" />
+          <path d="M630 40 C 650 130, 618 220, 640 320 S 626 480, 644 600" />
+          <path d="M650 70 C 664 160, 640 260, 656 360 S 648 520, 660 630" />
+          <path d="M610 120 C 618 200, 604 240, 614 300 C 622 340, 604 360, 612 420" />
+          <path d="M60 616 C 180 624, 300 608, 440 618 S 600 626, 640 616" />
+          <path d="M20 634 C 160 628, 280 644, 420 634 S 590 628, 660 640" />
+          <path d="M200 622 C 230 612, 270 612, 300 622 C 270 630, 230 630, 200 622" />
+          <path d="M470 20 C 500 12, 540 12, 570 20 C 540 28, 500 28, 470 20" />
+        </g>
+        <path class="frame-edge" d="M3 4 L668 2 L670 648 L2 650 Z" />
+        <path class="frame-edge thin" d="M6 1 L665 6 L667 645 L5 646 Z" />
+      </svg>
+
+      <div class="frame-inside">
+        <div class="letters" aria-hidden="true">
+          <span>a</span><span>b</span><span>c</span><span>d</span><span>e</span><span>f</span><span>g</span><span>h</span>
+        </div>
+        <div class="numbers" aria-hidden="true">
+          <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span>
+        </div>
+
+        <div class="board">
+          <div class="paper" aria-hidden="true"></div>
+          <div class="felt" aria-hidden="true"></div>
+          <div class="felt-stain one" aria-hidden="true"></div>
+          <div class="felt-stain two" aria-hidden="true"></div>
+          <svg class="lines" viewBox="-10 -10 580 580" aria-hidden="true">
+            <path class="edge" d="M-4 1 L563 -1" />
+            <path class="edge thin" d="M-6 3 L566 2" />
+            <path class="edge" d="M-5 561 L565 559" />
+            <path class="edge" d="M1 -5 L-1 566" />
+            <path class="edge thin" d="M-2 -7 L2 563" />
+            <path class="edge" d="M559 -4 L561 565" />
+            <path d="M-3 70 L563 71" />
+            <path d="M-2 140 L564 139" />
+            <path d="M-5 210 L562 211" />
+            <path d="M-3 280 L565 279" />
+            <path d="M-4 350 L563 351" />
+            <path d="M-2 420 L562 420" />
+            <path d="M-4 490 L564 489" />
+            <path d="M70 -3 L71 564" />
+            <path d="M140 -4 L139 562" />
+            <path d="M210 -2 L211 565" />
+            <path d="M280 -5 L279 563" />
+            <path d="M350 -3 L351 564" />
+            <path d="M420 -4 L420 562" />
+            <path d="M490 -2 L489 565" />
+            <circle cx="140" cy="140" r="4.5" />
+            <circle cx="420" cy="140" r="4.5" />
+            <circle cx="140" cy="420" r="4.5" />
+            <circle cx="420" cy="420" r="4.5" />
+          </svg>
+          <div class="squares" id="squares"></div>
+        </div>
+      </div>
+    </div>
+
+    <footer class="bottom">
+      <div class="note">
+        <span>*Black moves first</span>
+        <button class="link" id="switch-side">Play as white instead</button>
+      </div>
+      <div class="buttons">
+        <button class="button" id="undo" aria-label="Undo last move">
+          <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M9 14 4 9l5-5" />
+            <path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11" />
+          </svg>
+        </button>
+        <button class="button" id="new-game">New Game</button>
+      </div>
+    </footer>
+
+  </main>
+
+  <dialog class="result" id="result" aria-labelledby="result-title">
+    <h2 id="result-title">You Win!</h2>
+    <div class="final-score">
+      <span class="final">
+        <span class="who" id="final-black-who">You</span>
+        <span class="final-count"><span class="mini black" aria-hidden="true"></span><span id="final-black">0</span></span>
+      </span>
+      <span class="dash">–</span>
+      <span class="final">
+        <span class="who" id="final-white-who">AI</span>
+        <span class="final-count"><span class="mini white" aria-hidden="true"></span><span id="final-white">0</span></span>
+      </span>
+    </div>
+    <div class="result-buttons">
+      <button class="button dark" id="play-again">Play Again</button>
+      <button class="button light" id="close-result">Close</button>
+    </div>
+  </dialog>
+
+  <script type="module" src="main.js"></script>
+</body>
+</html>

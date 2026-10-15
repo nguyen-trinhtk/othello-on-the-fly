@@ -18,22 +18,19 @@ static unsigned pool_size()
 // Constructors
 AIEngine::AIEngine()
     : m_search_depth(5),
-      m_evaluator(std::make_unique<MaskEvaluator>()),
-      m_pool(pool_size())
+      m_evaluator(std::make_unique<MaskEvaluator>())
 {
 }
 
 AIEngine::AIEngine(int search_depth)
     : m_search_depth(search_depth),
-      m_evaluator(std::make_unique<MaskEvaluator>()),
-      m_pool(pool_size())
+      m_evaluator(std::make_unique<MaskEvaluator>())
 {
 }
 
 AIEngine::AIEngine(int search_depth, std::unique_ptr<IEvaluator> evaluator)
     : m_search_depth(search_depth),
-      m_evaluator(evaluator ? std::move(evaluator) : std::make_unique<MaskEvaluator>()),
-      m_pool(pool_size())
+      m_evaluator(evaluator ? std::move(evaluator) : std::make_unique<MaskEvaluator>())
 {
 }
 
@@ -83,11 +80,14 @@ std::optional<Move> AIEngine::best_move(const Board& board, Player player)
         return best;
     }
 
+    if (!m_pool)
+        m_pool = std::make_unique<ThreadPool>(pool_size());
+
     const std::size_t n = moves.size();
     std::vector<int> scores(n, NEG_INF);
 
     for (std::size_t i = 0; i < n; ++i) {
-        m_pool.submit([&, i] {
+        m_pool->submit([&, i] {
             TranspositionTable local_tt;
             Board copy = board.clone();
             Rules::apply_move(copy, player, moves[i]);
@@ -96,7 +96,7 @@ std::optional<Move> AIEngine::best_move(const Board& board, Player player)
         });
     }
 
-    m_pool.wait();
+    m_pool->wait();
 
     auto it = std::max_element(scores.begin(), scores.end());
     return moves[static_cast<std::size_t>(std::distance(scores.begin(), it))];

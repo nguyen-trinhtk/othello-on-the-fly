@@ -2,6 +2,12 @@
 
 This is a C++ Othello (aka Reversi) engine aimed at strong play and fast search. It uses **negamax** with **alpha–beta pruning**, a **transposition table** (Zobrist hashing), **thread-pool** root parallelism, and an **n-tuple neural network** evaluator.
 
+Try the game in your browser: **[Othello on the Fly](https://nguyen-trinhtk.github.io/othello-on-the-fly)**
+
+<p align="center">
+  <img src="docs/web-gui.gif" alt="Playing a few moves against the AI in the web version" width="480">
+</p>
+
 ## Implementation
 
 **Search**
@@ -20,6 +26,8 @@ A good eval lets the engine stay strong without searching as deep:
 
 ```
 app/           main app
+web/           web version of the game (HTML, CSS, JavaScript)
+wasm/          builds the engine for the web (./wasm/build.sh, needs Emscripten)
 src/ include/  search, eval, board rules (C++)
 python/        n-tuple training (PyTorch)
 benchmarks/    speed and strength tests
