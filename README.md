@@ -17,7 +17,7 @@ For more about the game, please see this [rulebook by World Othello Foundation](
 ## Implementation
 
 **Search**
-- **Negamax**: finds a move recursivelee assuming both sides play optimally
+- **Negamax**: finds a move recursively assuming both sides play optimally
 - **Alpha–beta pruning**: skips irrelevant branches in search tree that cannot beat the best move found so far
 - **Transposition table + Zobrist hashing**: caches scores for positions already seen
 - **Thread pool**: searches root moves in parallel (got about **5–6×** faster on 8 cores)
